@@ -374,7 +374,7 @@ Replacing the "vintage" 2TB with an **8TB HDD** is a solid move. When that time 
 
 ----------------
 
-Asus VM40B 8gb + 160gb HDD  
+Asus VM40B 8gb + 1tb SSD  
   
 
 - **AdGuard Home:**
@@ -384,9 +384,7 @@ Asus VM40B 8gb + 160gb HDD
 - **Grafana:**
 - **Exporters:**
 
-(edited)
-
-James Hart  [3:01 PM]  
+--------------------------
 
 - **Hot storage** (NVMe) — active model weights, datasets being trained on
 - **Warm storage** (SSD) — projects, code, containers
