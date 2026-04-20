@@ -368,3 +368,26 @@ Replacing the "vintage" 2TB with an **8TB HDD** is a solid move. When that time 
 2. Rsync everything from the 2TB to the 8TB.
     
 3. Update your Terraform/Kubernetes `hostPath` to point to the new disk.
+
+
+
+
+----------------
+
+Asus VM40B 8gb + 160gb HDD  
+  
+
+- **AdGuard Home:**
+- **Unbound:**
+- **Netdata:**
+- **Prometheus:**
+- **Grafana:**
+- **Exporters:**
+
+(edited)
+
+James Hart  [3:01 PM]  
+
+- **Hot storage** (NVMe) — active model weights, datasets being trained on
+- **Warm storage** (SSD) — projects, code, containers
+- **Cold storage** (HDD) — audio library, backups, archived models
