@@ -48,22 +48,20 @@ MacBook Air M4 (dev)
 
 ## Phase 0 — Mac Dev Environment Setup
 
-> One-time setup on MacBook Air M4. Skip what you already have.
+> I have most, just need verifying and/or updating
 
-- [ ] Install Homebrew if not present
-- [ ] `brew install terraform ansible git gh`
-- [ ] `brew install --cask visual-studio-code`
+- [ ] Install MacPort if not present
+- [ ] `port install terraform ansible git gh`
+- [ ] `port install --cask visual-studio-code`
 - [ ] Configure SSH key pair — add public key to VM40B `authorized_keys`
-- [ ] 
+- [ ] Install VS Code extensions: `HashiCorp Terraform`, `Ansible`, `Remote-SSH`
 - [ ] Configure `~/.ssh/config` with VM40B host alias
-- [ ] Create GitHub repo: `homelab-iac` (or add to existing K8s lab repo under `/vm40b`)
+- [ ] Create GitHub file structurein Homelab repo
 - [ ] Set GitHub Actions secrets: `VM40B_HOST`, `VM40B_USER`, `SSH_PRIVATE_KEY`
 
 ---
 
 ## Phase 1 — Hardware & OS Prep
-
-> Hands-on — physical access to VM40B required.
 
 - [ ] Install Ubuntu Server 24.04 LTS 
 - [ ] minimal install, with SSH
