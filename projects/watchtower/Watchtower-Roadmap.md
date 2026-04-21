@@ -24,6 +24,55 @@
 
 ---
 
+## Background & Key Decisions
+
+### Context
+
+This project grew out of a conversation mapping the full homelab. The Asus VM40B was an idle mini-PC being used as a doorstop. Rather than buy new hardware, the plan repurposes it with a 1TB SSD migrated from Monolith (where Navidrome's audio library was moved to an 8TB HDD upgrade). The 8TB was chosen over 4TB deliberately — the lab is planned to grow into LLM/AI dev work where model weights, datasets, and training checkpoints will consume storage fast.
+
+### Naming
+
+- **Monolith** — the AMD tower running k3s. Named for its role as the single heavy node.
+- **Watchtower** — the VM40B monitoring/DNS node. Named for its role: sees everything, never sleeps.
+- **apex** — the MacBook Air M4. All authoring, config, and remote ops originate here.
+- **Little Wolf Acres** — the family Slack workspace receiving Grafana alerts.
+
+### Why `services/` not `projects/`
+
+Projects implies temporary work with a completion state. These are permanent running infrastructure services. Navidrome and Watchtower are services. The rename also maps cleanly to how the industry talks about what runs in production.
+
+### Why Ansible alongside Terraform
+
+Terraform alone is awkward for ongoing config management of a bare Linux box — it's designed for infrastructure declaration, not package installs and service configuration. Ansible owns what's installed and running on Watchtower (packages, systemd units, config files). Terraform owns infrastructure facts (state, firewall declarations, future cloud resources). GitHub Actions orchestrates both. This is the standard real-world pattern and directly relevant to DevOps interview conversations.
+
+### Why Terraform Cloud for state
+
+The existing Monolith Terraform setup stores state locally on the runner, meaning a dead Monolith loses the state file. Terraform Cloud free tier hosts state remotely, survives any node failure, supports multiple workspaces (one per node), and lets GitHub Actions reach state without being tied to a specific runner machine. Two workspaces: `monolith` and `watchtower`.
+
+### Why isolated runners per node
+
+A self-hosted runner has network-level access to everything its host can reach. If one runner managed multiple nodes via SSH, a compromised pipeline job could pivot laterally across the lab. Watchtower's runner uses the `watchtower` label and only manages Watchtower. Monolith's runner uses the `monolith` label and only manages Monolith. Blast radius is contained by design. Watchtower is bootstrapped manually once via SSH from apex, then handed off to GitHub Actions permanently.
+
+### Why no Docker on Watchtower
+
+8GB RAM, always-on services, no orchestration layer. Everything runs as native binaries with systemd units — lighter, simpler to debug, no container runtime overhead. Consistent with Monolith using k3s with containerd rather than Docker.
+
+### Why Grafana alerting not Alertmanager
+
+At this scale Alertmanager adds operational surface area without meaningful benefit. Grafana's built-in alerting handles all required rules and routes directly to Slack.
+
+### Where this conversation left off
+
+PSU on the VM40B needs replacing before any hands-on work begins. Phase 0 (repo housekeeping + Terraform Cloud setup) can be done on apex immediately while waiting for hardware. The file server for family backups (daughter's iPad art, wife's crochet notes) is the next Monolith project after Watchtower is stable — noted in the repo README already.
+
+### Owner notes
+
+- 4.0 GPA, 16 credits into BS in CS with AI focus — lab decisions are made with an eye toward what's relevant to coursework and interviews, not just what works
+- IT veteran + unemployed DevOps Engineer — this lab is both a learning environment and a portfolio
+- Aced CS102, currently taking US History 1945–present (more overlap with computing history than expected — Cold War funding, ARPANET, semiconductor investment)
+
+--------------
+
 ## Repo Structure (Target State)
 
 > `projects/` is being renamed to `services/` — permanent infrastructure belongs there, not projects.
