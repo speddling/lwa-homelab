@@ -1,0 +1,156 @@
+# ASRock AB350 Pro4 — Upgrade Summary
+**Use case:** k3s Kubernetes lab · Navidrome audio server · LAN fileshare/backup (3 users) · CS degree coursework (Python → Front End → Back End/DB) · Occasional small AI/ML school projects
+
+---
+
+## System Context
+
+| Item | Detail |
+|---|---|
+| Motherboard | ASRock AB350 Pro4 (AM4, B350 chipset) |
+| Current CPU | Ryzen 3 1200 (Summit Ridge / "A10" — Raven Ridge APU) |
+| Max RAM | 64GB DDR4 (4 slots) |
+| Max RAM speed | DDR4-3200 (native, no OC needed with Zen 3) |
+| OS | Ubuntu (headless) |
+| Orchestration | k3s |
+
+---
+
+## ⚠️ Critical: BIOS Update Sequence
+
+Before installing any Ryzen 5000 (Vermeer) CPU, you **must** update the BIOS incrementally using your existing CPU. Skipping steps risks a non-booting system or bricked BIOS.
+
+**Required update path:**
+```
+3.40 → 5.40 → 7.00 → 8.02
+```
+
+- Download each version from the [ASRock AB350 Pro4 BIOS page](https://www.asrock.com/mb/AMD/AB350%20Pro4/)
+- Do **not** skip intermediate versions — the BIOS chip is small and updates are incremental by design
+- Complete all updates with your **current CPU in place**, then swap
+
+> The B350 chipset officially supports up to Matisse (Ryzen 3000). Ryzen 5000 (Vermeer) works on BIOS 8.02 but is community-confirmed, not officially listed by ASRock for this board.
+
+---
+
+## Option 1 — Recommended: Ryzen 5 5600G + 64GB DDR4
+
+### CPU: AMD Ryzen 5 5600G
+| Spec | Value |
+|---|---|
+| Architecture | Zen 3 (Cezanne) |
+| Cores / Threads | 6c / 12t |
+| Base / Boost | 3.9 GHz / 4.4 GHz |
+| TDP | 65W |
+| iGPU | Radeon Vega 7 (no discrete GPU needed) |
+| Estimated price | ~$120–140 |
+
+**Why this wins for your use case:**
+- Integrated Vega 7 GPU satisfies the board's display requirement — no throwaway GPU purchase
+- 65W TDP keeps the system cool and quiet 24/7
+- Zen 3 IPC is a major generational leap over your current Raven Ridge
+- 6c/12t handles k3s, Navidrome, fileshare, and Python coursework simultaneously without strain
+- No GPU means one fewer component to manage/fail
+
+**iGPU gotcha — RAM sharing:**
+- The Vega 7 iGPU carves out system RAM as VRAM (default 512MB–2GB)
+- Since you're headless, **set iGPU memory allocation to 512MB in BIOS** to minimize the reservation
+- With 64GB total, this is a negligible tradeoff
+
+---
+
+## Option 2 — Alternative: Ryzen 7 5700X + GT 710
+
+### CPU: AMD Ryzen 7 5700X
+| Spec | Value |
+|---|---|
+| Architecture | Zen 3 |
+| Cores / Threads | 8c / 16t |
+| Base / Boost | 3.4 GHz / 4.6 GHz |
+| TDP | 65W |
+| iGPU | None — discrete GPU required |
+| Estimated price | ~$140–180 |
+
+### GPU: NVIDIA GeForce GT 710 (display placeholder only)
+| Spec | Value |
+|---|---|
+| TDP | ~15–25W |
+| Power | Bus-powered (no PCIe power cable needed) |
+| Fanless options | Yes |
+| Estimated price | ~$25–45 |
+| Purpose | POST / BIOS access only — completely idle headless |
+
+**Why you might choose this instead:**
+- 2 extra cores (16 threads vs 12) if you ever run multi-hour training jobs or many simultaneous k3s pods
+- Zero RAM shared to GPU — full 64GB available to workloads
+- Still 65W TDP on the CPU
+
+**Honest assessment:** For your actual roadmap (Python coursework → front-end → back-end/DB, with cloud migration when projects outgrow local), the extra 2 cores are unlikely to matter. The 5600G is the cleaner, simpler, and slightly cheaper path.
+
+---
+
+## RAM: 64GB DDR4-3200 CL16 (both options)
+
+**Configuration:** 4×16GB across all 4 slots (preferred over 2×32GB)
+
+**Why 4×16GB over 2×32GB:**
+- Populates all slots for maximum memory bandwidth — meaningful for CPU-bound ML inference
+- Leaves no slots unused
+- Slightly better dual-channel interleaving
+
+**Recommended kits:**
+- G.Skill RipjawsV 4×16GB DDR4-3200 CL16 (~$80–100)
+- Kingston Fury Beast 4×16GB DDR4-3200 CL16 (~$80–100)
+- Corsair Vengeance LPX 4×16GB DDR4-3200 CL16 (~$85–105)
+
+**Why 64GB for this use case:**
+- k3s overhead + Navidrome + fileshare + a DB container + app server container + dev tooling adds up quickly
+- 64GB lets you set generous resource limits without careful tuning — important quality of life in a home lab
+- Future-proofed for back-end/DB coursework where running Postgres, Redis, and app servers simultaneously is normal
+
+> **Note:** DDR4-3200 is the official rated speed for Zen 3 on this board. No XMP/overclocking needed — it just works at spec.
+
+---
+
+## Workload Fit Assessment
+
+| Workload | CPU demand | RAM demand | Notes |
+|---|---|---|---|
+| k3s base overhead | Low | ~1–2GB | k3s is much lighter than full k8s |
+| Navidrome | Very low | ~256MB | Basically idle |
+| LAN fileshare/backup (3 users) | Very low (I/O bound) | Low | Network and disk are the bottleneck, not CPU |
+| Python coursework | Low–Medium | Low | Bursts during script runs |
+| Front-end dev (upcoming) | Low | Low | Node/npm dev servers are light |
+| Back-end + DB (upcoming) | Medium | Medium | Multiple containers — where 64GB earns its keep |
+| Small ML school projects | Medium (bursts) | Medium | CPU inference only; no GPU compute needed |
+| AI image / music generation | N/A | N/A | Hard pass — not in scope |
+
+---
+
+## Migration Strategy
+
+Given AWS DevOps experience:
+- Run everything locally through front-end and early back-end coursework
+- When projects need more compute (GPU ML, large DB datasets, load testing), migrate to AWS — EKS, RDS, EC2 as appropriate
+- k3s manifests translate reasonably well to EKS with minor adjustments
+- Local lab remains the fast-iteration, zero-cost environment; cloud is for scale
+
+---
+
+## Total Upgrade Cost Estimate
+
+| Option | CPU | RAM | GPU | Total |
+|---|---|---|---|---|
+| **Option 1 (recommended)** | 5600G ~$130 | 4×16GB ~$90 | None | **~$220** |
+| Option 2 | 5700X ~$160 | 4×16GB ~$90 | GT 710 ~$35 | **~$285** |
+
+---
+
+## Quick Checklist
+
+- [ ] Download BIOS versions 3.40, 5.40, 7.00, and 8.02 from ASRock before ordering CPU
+- [ ] Update BIOS incrementally with current CPU installed
+- [ ] Order CPU + RAM kit
+- [ ] Set iGPU VRAM to 512MB in BIOS after install (Option 1 only)
+- [ ] Verify DDR4-3200 is detected correctly in BIOS (should be automatic with Zen 3)
+- [ ] Enjoy the upgrade
