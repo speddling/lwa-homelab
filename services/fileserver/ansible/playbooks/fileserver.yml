@@ -18,6 +18,7 @@
           - samba
           - expect
           - python3-pexpect
+          - ufw
         state: present
         update_cache: true
 
