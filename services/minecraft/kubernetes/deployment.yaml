@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minecraft-bedrock
+  namespace: minecraft
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minecraft-bedrock
+  template:
+    metadata:
+      labels:
+        app: minecraft-bedrock
+    spec:
+      initContainers:
+        - name: world-import
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              WORLD_DIR="/data/worlds/my-realm"
+              MARKER="/data/worlds/.imported"
+
+              if [ -f "$MARKER" ]; then
+                echo "World already imported, skipping."
+                exit 0
+              fi
+
+              if [ -f "/world-import/realm.mcworld" ]; then
+                echo "Importing realm backup..."
+                mkdir -p "$WORLD_DIR"
+                unzip /world-import/realm.mcworld -d "$WORLD_DIR"
+                touch "$MARKER"
+                echo "Import complete."
+              else
+                echo "No .mcworld file found, starting fresh."
+              fi
+          volumeMounts:
+            - name: minecraft-data
+              mountPath: /data
+            - name: world-import
+              mountPath: /world-import
+
+      containers:
+        - name: minecraft-bedrock
+          image: itzg/minecraft-bedrock-server:latest
+          envFrom:
+            - configMapRef:
+                name: minecraft-config
+          ports:
+            - containerPort: 19132
+              protocol: UDP
+          volumeMounts:
+            - name: minecraft-data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "3Gi"
+              cpu: "2000m"
+
+      volumes:
+        - name: minecraft-data
+          persistentVolumeClaim:
+            claimName: minecraft-data
+        - name: world-import
+          hostPath:
+            path: /opt/minecraft/import   # ← Ansible drops the .mcworld here
+            type: DirectoryOrCreate
