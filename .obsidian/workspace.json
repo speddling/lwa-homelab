@@ -186,6 +186,8 @@
   },
   "active": "165dadc935b0cab3",
   "lastOpenFiles": [
+    "services/minecraft/ansible/playbooks/import-world.yml",
+    "services/minecraft/ansible/playbooks",
     "services/minecraft/kubernetes/service.yaml",
     "services/minecraft/kubernetes/pvc.yaml",
     "services/minecraft/kubernetes/namespace.yaml",
@@ -195,8 +197,6 @@
     "services/minecraft/ansible/inventory.ini",
     "services/minecraft/kubernetes",
     "services/minecraft/files",
-    "services/minecraft/ansible",
-    "services/minecraft",
     "network/omada/hardware.md",
     "nodes/vm40b/hardware.md",
     "services/watchtower/Watchtower-Roadmap.md",

@@ -1,0 +1,25 @@
+---
+- name: Stage Minecraft world import
+  hosts: monolith
+  become: true
+
+  vars:
+    import_dir: /opt/minecraft/import
+    mcworld_local_path: "{{ playbook_dir }}/../../files/realm.mcworld"
+
+  tasks:
+    - name: Create import staging directory
+      ansible.builtin.file:
+        path: "{{ import_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Copy .mcworld file to node
+      ansible.builtin.copy:
+        src: "{{ mcworld_local_path }}"
+        dest: "{{ import_dir }}/realm.mcworld"
+        mode: "0644"
+
+    - name: Confirm file staged
+      ansible.builtin.debug:
+        msg: "realm.mcworld staged at {{ import_dir }} — deploy the manifest to trigger import"
