@@ -1,0 +1,69 @@
+---
+- name: Configure Samba file server (vault)
+  hosts: monolith
+  become: true
+
+  vars_files:
+    - ../group_vars/all/vars.yml
+
+  tasks:
+    - name: Install Samba
+      ansible.builtin.apt:
+        name: samba
+        state: present
+        update_cache: true
+
+    - name: Create share directory
+      ansible.builtin.file:
+        path: "{{ samba_share_path }}"
+        state: directory
+        mode: "0775"
+        owner: "{{ samba_user }}"
+        group: "{{ samba_user }}"
+
+    - name: Create Samba system user
+      ansible.builtin.user:
+        name: "{{ samba_user }}"
+        shell: /sbin/nologin
+        create_home: false
+        state: present
+
+    - name: Set Samba password for user
+      ansible.builtin.shell: |
+        echo -e "{{ samba_password }}\n{{ samba_password }}" | smbpasswd -a -s {{ samba_user }}
+      no_log: true
+      changed_when: false
+
+    - name: Enable Samba user
+      ansible.builtin.shell: smbpasswd -e {{ samba_user }}
+      changed_when: false
+
+    - name: Write smb.conf
+      ansible.builtin.template:
+        src: ../templates/smb.conf.j2
+        dest: /etc/samba/smb.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart Samba
+
+    - name: Enable and start Samba services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+      loop:
+        - smbd
+        - nmbd
+
+    - name: Allow Samba through UFW
+      community.general.ufw:
+        rule: allow
+        name: Samba
+        comment: Samba - vault share
+
+  handlers:
+    - name: Restart Samba
+      ansible.builtin.systemd:
+        name: smbd
+        state: restarted

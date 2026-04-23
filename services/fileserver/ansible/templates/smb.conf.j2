@@ -1,0 +1,22 @@
+[global]
+   workgroup = WORKGROUP
+   server string = Monolith File Server
+   server role = standalone server
+   log file = /var/log/samba/log.%m
+   max log size = 50
+   dns proxy = no
+
+   # Security
+   security = user
+   map to guest = never
+   smb encrypt = desired
+
+[{{ samba_share_name }}]
+   comment = Vault — Family backup share
+   path = {{ samba_share_path }}
+   browseable = yes
+   read only = no
+   valid users = {{ samba_user }}
+   create mask = 0664
+   directory mask = 0775
+   force user = {{ samba_user }}

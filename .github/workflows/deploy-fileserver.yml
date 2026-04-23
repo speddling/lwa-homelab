@@ -1,0 +1,25 @@
+name: Deploy Fileserver
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, monolith]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: |
+          sudo apt-get install -y ansible
+
+      - name: Install Ansible community.general collection
+        run: |
+          ansible-galaxy collection install community.general
+
+      - name: Run fileserver playbook
+        run: |
+          ansible-playbook \
+            -i services/fileserver/ansible/inventory.ini \
+            services/fileserver/ansible/playbooks/fileserver.yml
