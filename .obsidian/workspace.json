@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "README.md",
+                "file": "services/watchtower/Watchtower-Roadmap.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "Watchtower-Roadmap"
             }
           }
         ]
@@ -186,6 +186,7 @@
   },
   "active": "165dadc935b0cab3",
   "lastOpenFiles": [
+    "README.md",
     "services/minecraft/ansible/playbooks/import-world.yml",
     "services/minecraft/ansible/playbooks",
     "services/minecraft/kubernetes/service.yaml",
@@ -196,11 +197,9 @@
     "services/minecraft/ansible/{playbooks}",
     "services/minecraft/ansible/inventory.ini",
     "services/minecraft/kubernetes",
-    "services/minecraft/files",
     "network/omada/hardware.md",
     "nodes/vm40b/hardware.md",
     "services/watchtower/Watchtower-Roadmap.md",
-    "README.md",
     "terraform/README.md",
     "docs/ab350_pro4_upgrade_summary.md",
     "docs/Pipeline considerations.md",
