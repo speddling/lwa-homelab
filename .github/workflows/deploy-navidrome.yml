@@ -1,0 +1,32 @@
+name: Deploy Navidrome
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    labels: [monolith]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply storage config
+        run: |
+          kubectl apply -f kubernetes/cluster/storage/local-path-config.yaml
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f services/navidrome/kubernetes/namespace.yaml
+          kubectl apply -f services/navidrome/kubernetes/pvc.yaml
+          kubectl apply -f services/navidrome/kubernetes/configmap.yaml
+          kubectl apply -f services/navidrome/kubernetes/deployment.yaml
+          kubectl apply -f services/navidrome/kubernetes/service.yaml
+          kubectl apply -f services/navidrome/kubernetes/ingress.yaml
+
+      - name: Verify deployment
+        run: |
+          echo "Checking volume binding..."
+          kubectl get pvc -n navidrome
+          echo "Checking pod status..."
+          kubectl get pods -n navidrome

@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: navidrome
+  namespace: navidrome
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: navidrome
+  template:
+    metadata:
+      labels:
+        app: navidrome
+    spec:
+      containers:
+        - name: navidrome
+          image: deluan/navidrome:latest
+          envFrom:
+            - configMapRef:
+                name: navidrome-config
+          ports:
+            - containerPort: 4533
+          volumeMounts:
+            - name: db-storage
+              mountPath: /data
+            - name: music-storage
+              mountPath: /music
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
+      volumes:
+        - name: db-storage
+          persistentVolumeClaim:
+            claimName: navidrome-db
+        - name: music-storage
+          hostPath:
+            path: /mnt/lab-backups/music-library  # → /mnt/hdd/music-library after 8TB swap
+            type: Directory
