@@ -41,7 +41,7 @@
         responses:
           "New SMB password:": "{{ samba_password }}"
           "Retype new SMB password:": "{{ samba_password }}"
-      no_log: true
+ #     no_log: true
 
     - name: Enable Samba user
       ansible.builtin.shell: smbpasswd -e {{ samba_user }}
