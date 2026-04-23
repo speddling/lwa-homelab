@@ -17,6 +17,7 @@
         name:
           - samba
           - expect
+          - python3-pexpect
         state: present
         update_cache: true
 
