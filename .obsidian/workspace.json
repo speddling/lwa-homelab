@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "services/watchtower/Watchtower-Roadmap.md",
+                "file": "docs/homelab-setup-notes.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Watchtower-Roadmap"
+              "title": "homelab-setup-notes"
             }
           }
         ]
@@ -184,8 +184,9 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "bffb361906a7587a",
+  "active": "165dadc935b0cab3",
   "lastOpenFiles": [
+    "services/watchtower/Watchtower-Roadmap.md",
     "homelab-dump.txt",
     "docs/minecraft-bedrock-k3s.md",
     "README.md",
@@ -198,10 +199,8 @@
     "services/minecraft/kubernetes/configmap.yaml",
     "services/minecraft/ansible/{playbooks}",
     "services/minecraft/ansible/inventory.ini",
-    "services/minecraft/kubernetes",
     "network/omada/hardware.md",
     "nodes/vm40b/hardware.md",
-    "services/watchtower/Watchtower-Roadmap.md",
     "terraform/README.md",
     "docs/ab350_pro4_upgrade_summary.md",
     "docs/Pipeline considerations.md",
