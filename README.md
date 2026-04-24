@@ -26,14 +26,14 @@ Personal Kubernetes home lab documentation, configurations, and manifests.
 
 ## Finished Projects
 - Navidrome audio server with ~1TB FLAC/MP3 library
+- Linux Samba share - for Wife & Daughter's file backups
 
 ## Next Project
 - Minecraft Server for the Wife and Daughter
 
 ## Pending Projects
-- File server, local backup solution for daughter's iPad art and wife's crochet patterns & notes
 - Always-on DNS resolver + full-stack monitoring node.
-- Upgrade Worker Node hardware with Ryzen and 8TB HDD in place of the 2TB HDD
+- Upgrade Worker Node hardware with Ryzen, max ram, and 8TB HDD
 
 ## Status
 Online

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/Pipeline considerations.md",
+                "file": "README.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Pipeline considerations"
+              "title": "README"
             }
           }
         ]
@@ -186,6 +186,7 @@
   },
   "active": "165dadc935b0cab3",
   "lastOpenFiles": [
+    "docs/Pipeline considerations.md",
     "docs/storage.md",
     "docs/homelab-setup-notes.md",
     "services/fileserver/ansible/inventory.ini",
@@ -206,7 +207,6 @@
     "nodes/vm40b/hardware.md",
     "terraform/README.md",
     "docs/ab350_pro4_upgrade_summary.md",
-    "docs/Pipeline considerations.md",
     "docs/homelab-overview.md",
     "nodes/macbook/hardware.md",
     "nodes/amd-tower/hardware.md",
