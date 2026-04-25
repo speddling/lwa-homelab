@@ -1,56 +1,30 @@
-=== ./.github/workflows/deploy-k8s-config.yml ===
-name: Deploy Kubernetes Config
+=== ./.github/workflows/deploy-fileserver.yml ===
+name: Deploy Fileserver
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'kubernetes/**'
   workflow_dispatch:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, monolith]
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configure Storage Engine
+      - name: Install Ansible
         run: |
-          # 1. Apply the paths config (Idempotent)
-          sudo k3s kubectl apply -f ${{ github.workspace }}/kubernetes/cluster/storage/local-path-config.yaml
-          
-          # 2. We only restart the provisioner if the config actually changed. 
-          # Bouncing it every time can cause temporary volume detachments.
-          # Removing the 'delete pod' unless you are specifically troubleshooting the provisioner itself.
+          sudo apt-get install -y ansible
 
-      - name: Clean Stale Resources
+      - name: Install Ansible community.general collection
         run: |
-          # FIX: Removed 'delete pvc'. 
-          # In a DevOps workflow, PVCs should be persistent lifecycle objects.
-          # We only delete the deployment to ensure the new image/config is pulled.
-          sudo k3s kubectl delete deployment navidrome --ignore-not-found
+          ansible-galaxy collection install community.general
 
-      - name: Deploy Storage Classes
+      - name: Run fileserver playbook
         run: |
-          # 3. Apply StorageClass definitions. 
-          # If they exist and haven't changed, K8s will return "unchanged".
-          sudo k3s kubectl apply -f ${{ github.workspace }}/kubernetes/cluster/storage/
+          ansible-playbook \
+            -i services/fileserver/ansible/inventory.ini \
+            services/fileserver/ansible/playbooks/fileserver.yml
 
-      - name: Deploy Navidrome
-        run: |
-          # 4. Re-apply Navidrome.
-          # Because we didn't delete the PVCs in the 'Clean' step, 
-          # K8s will bind the new Pods to the EXISTING persistent volumes.
-          sudo k3s kubectl apply -f ${{ github.workspace }}/kubernetes/apps/navidrome/
-
-      - name: Verify Deployment
-        run: |
-          echo "Checking volume binding status..."
-          sudo k3s kubectl get pvc
-          echo "Checking pod status..."
-          sudo k3s kubectl get pods
 === ./.github/workflows/deploy-minecraft.yml ===
 name: Deploy Minecraft
 
@@ -64,7 +38,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, monolith]
     labels: [monolith]
 
     steps:
@@ -84,8 +58,84 @@ jobs:
           kubectl apply -f services/minecraft/kubernetes/configmap.yaml
           kubectl apply -f services/minecraft/kubernetes/deployment.yaml
           kubectl apply -f services/minecraft/kubernetes/service.yaml
-=== ./.github/workflows/deploy-watchtower.yml ===
+=== ./.github/workflows/deploy-navidrome.yml ===
+name: Deploy Navidrome
 
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, monolith]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply storage config
+        run: |
+          kubectl apply -f kubernetes/cluster/storage/local-path-config.yaml
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f services/navidrome/kubernetes/namespace.yaml
+          kubectl apply -f services/navidrome/kubernetes/pvc.yaml
+          kubectl apply -f services/navidrome/kubernetes/configmap.yaml
+          kubectl apply -f services/navidrome/kubernetes/deployment.yaml
+          kubectl apply -f services/navidrome/kubernetes/service.yaml
+          kubectl apply -f services/navidrome/kubernetes/ingress.yaml
+
+      - name: Verify deployment
+        run: |
+          echo "Checking volume binding..."
+          kubectl get pvc -n navidrome
+          echo "Checking pod status..."
+          kubectl get pods -n navidrome
+
+=== ./.github/workflows/deploy-watchtower.yml ===
+name: Deploy Watchtower Config
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'services/watchtower/**'
+      - 'terraform/watchtower/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Init & Apply
+        working-directory: terraform/watchtower
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Run Ansible — DNS
+        run: |
+          ansible-playbook \
+            -i services/watchtower/ansible/inventory.ini \
+            services/watchtower/ansible/playbooks/dns.yml
+
+      - name: Run Ansible — Monitoring
+        run: |
+          ansible-playbook \
+            -i services/watchtower/ansible/inventory.ini \
+            services/watchtower/ansible/playbooks/monitoring.yml
+
+      - name: Run Ansible — Exporters
+        run: |
+          ansible-playbook \
+            -i services/watchtower/ansible/inventory.ini \
+            services/watchtower/ansible/playbooks/exporters.yml
 === ./.github/workflows/provision-k3s.yml ===
 name: Provision K3s Cluster
 
@@ -1005,6 +1055,47 @@ kubectl rollout restart deploy/minecraft-bedrock -n minecraft
 kubectl exec -n minecraft deploy/minecraft-bedrock -- rm /data/worlds/.imported
 ```
 
+=== ./docs/network.md ===
+# Network Documentation
+
+## Static IP Reservations
+
+All static assignments are DHCP MAC-bound in the ER605. Do not set static IPs at the OS level.
+
+| IP | Hostname | Role |
+|---|---|---|
+| 192.168.0.4 | Big Brother | Reolink NVR / Camera Controller |
+| 192.168.0.7 | OC200 | Omada Network Controller |
+| 192.168.0.19 | Apex | MacBook Pro — Primary Workstation |
+| 192.168.0.20 | Monolith | k3s Node — Primary Server |
+| 192.168.0.21 | Watchtower | Ansible / DNS / Network Services (pending) |
+| 192.168.0.109 | Studio | Ubuntu Studio — DAW / KDE Workstation |
+
+All other devices use dynamic DHCP leases.
+
+---
+
+## Notes
+
+- DNS resolution via hostname is pending Watchtower build — use IPs until then
+- When Watchtower DNS is live, all fstab and Ansible inventory files referencing IPs should be updated to hostnames
+- ER605 manages routing and firewall at the network boundary
+
+---
+
+## SSH Aliases (Apex ~/.zshrc)
+
+```bash
+# Lab hosts
+alias monolith='ssh speddling@192.168.0.20'
+alias watchtower='ssh speddling@192.168.0.21'
+alias studio='ssh speddling@192.168.0.109'
+```
+
+---
+
+*Last updated: 2026-04-24*
+
 === ./docs/Pipeline considerations.md ===
 
 **GitHub Actions** and **Terraform**,
@@ -1032,105 +1123,102 @@ Since you're hardening the box first (presumably via SSH/Ansible or manual scrip
 
 - **Lint your YAMLs:** Run `kube-linter` or `yamllint` before any push.
 - **Terraform Plan/Apply:** Use a **self-hosted runner** (on your Ryzen box) to execute the Terraform applies. This avoids the need to expose your lab's K8s API to the public internet for the GitHub-hosted runners to reach.
-=== ./kubernetes/apps/navidrome/deployment.yaml ===
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: navidrome
-spec:
-  selector:
-    matchLabels:
-      app: navidrome
-  template:
-    metadata:
-      labels:
-        app: navidrome
-    spec:
-      containers:
-      - name: navidrome
-        image: deluan/navidrome:latest
-        ports:
-        - containerPort: 4533
-        env:
-        - name: ND_SCANSCHEDULE
-          value: "1h"
-        - name: ND_LOGLEVEL
-          value: "info"
-        volumeMounts:
-        - name: db-storage
-          mountPath: /data
-        - name: music-storage
-          mountPath: /music
-      volumes:
-        - name: db-storage
-          persistentVolumeClaim:
-            claimName: navidrome-db
-        - name: music-storage
-          hostPath:
-            path: /mnt/lab-backups/music-library
-            type: DirectoryOrCreate
-=== ./kubernetes/apps/navidrome/ingress.yaml ===
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: navidrome
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
-spec:
-  rules:
-  - http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: navidrome
-            port:
-              number: 4533
-=== ./kubernetes/apps/navidrome/pvc.yaml ===
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: navidrome-db
-spec:
-  accessModes: [ReadWriteOnce]
-  storageClassName: fast
-  resources:
-    requests:
-      storage: 2Gi
+=== ./docs/storage.md ===
+# Monolith — Storage Layout
+
+## Physical Drives
+
+| Device | Size | Type | Mount | Purpose |
+|---|---|---|---|---|
+| nvme0n1 | 476.9G | NVMe SSD | `/` (150G LVM) | Boot / OS / k3s — remaining space is unallocated headroom |
+| sda | 465.8G | SATA SSD | `/mnt/ssd-a` | k8s local-path provisioner (PVC storage) |
+| sdb | 238.5G | SATA SSD | `/mnt/ssd-b` | File server / family backups |
+| sdc | 1.8T | SATA HDD | `/mnt/lab-backups` | Music library — replace with 8TB HDD when upgraded |
+
+> **Note:** The AB350 Pro4 throttles NVMe to PCIe 2.0 x2. The unallocated NVMe space is intentional headroom for future growth, not an oversight.
+
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: navidrome-music
-spec:
-  accessModes: [ReadWriteOnce]
-  storageClassName: tunes
-  resources:
-    requests:
-      storage: 800Gi
-=== ./kubernetes/apps/navidrome/service.yaml ===
-apiVersion: v1
-kind: Service
-metadata:
-  name: navidrome
-spec:
-  type: NodePort
-  selector:
-    app: navidrome
-  ports:
-  - port: 4533
-    targetPort: 4533
-    nodePort: 30533 # Access via http://monolith-ip:30533
-=== ./kubernetes/cluster/storage/fast-ssd.yaml ===
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: fast
-provisioner: rancher.io/local-path
-volumeBindingMode: WaitForFirstConsumer
-parameters:
-  nodePath: /mnt/k8s-worker
+
+## Mount Points
+
+All mounts are UUID-based in `/etc/fstab` to survive drive reordering on reboot.
+
+```
+UUID=2903b345-9ec9-4524-9a59-c065f1a7c67c  /mnt/ssd-a       ext4  defaults  0  2
+UUID=6ec61651-6596-4f29-82e5-ca6c43b6f552  /mnt/ssd-b       ext4  defaults  0  2
+UUID=725e0389-8e5b-431f-bdb4-1c59ab79ddf6  /mnt/lab-backups ext4  defaults  0  2
+```
+
+---
+
+## k3s Storage Classes
+
+| Class | Provisioner | Path | Used By |
+|---|---|---|---|
+| `local-path` (default) | rancher.io/local-path | `/mnt/ssd-a` | Navidrome DB, future service PVCs |
+
+The music library is mounted directly via `hostPath` in the Navidrome deployment — it is too large and too static to benefit from PVC abstraction at this scale.
+
+---
+
+## Directory Structure
+
+```
+/mnt/ssd-a/
+└── pvc-*/                        ← k3s local-path provisioner directories
+
+/mnt/ssd-b/
+└── (reserved for file server)
+
+/mnt/lab-backups/
+└── music-library/                ← Navidrome audio library (~605G)
+```
+
+---
+
+## Planned Changes
+
+### 8TB HDD Upgrade
+When the 8TB HDD arrives to replace the 2TB:
+
+1. Install 8TB, identify device with `lsblk`
+2. Format: `sudo mkfs.ext4 /dev/sdX`
+3. Mount temporarily: `sudo mount /dev/sdX /mnt/hdd-new`
+4. Rsync music library: `sudo rsync -av /mnt/lab-backups/ /mnt/hdd-new/`
+5. Update `/etc/fstab` — replace `sdc` UUID with new drive UUID, change mount point to `/mnt/hdd`
+6. Unmount old, mount new: `sudo umount /mnt/lab-backups && sudo mount -a`
+7. Update `deployment.yaml` hostPath: `/mnt/lab-backups/music-library` → `/mnt/hdd/music-library`
+8. Redeploy via GitHub Actions: `deploy-navidrome.yml`
+9. Navidrome will rescan the library automatically within 1 hour (or trigger manually)
+
+> DB loss on redeploy is acceptable — library reindexes automatically, playlists must be recreated manually.
+
+---
+
+## Post-Watchtower Cleanup
+- Remove UFW from fileserver Ansible playbook — firewall policy will be managed at the network layer via ER605 / Watchtower
+
+
+## Working With Claude
+
+To share this repo with Claude for review or updates, run from the repo root:
+
+```bash
+find . -type f \( -name "*.yaml" -o -name "*.md" -o -name "*.yml" \) \
+  ! -path "./.obsidian/*" \
+  | sort | while read f; do
+    echo "=== $f ==="
+    cat "$f"
+    echo ""
+  done > homelab-dump.txt
+```
+
+Upload `homelab-dump.txt` directly in the Claude chat window.
+
+---
+
+*Last updated: 2026-04-23*
+
 === ./kubernetes/cluster/storage/local-path-config.yaml ===
 apiVersion: v1
 kind: ConfigMap
@@ -1144,35 +1232,26 @@ data:
         {
           "node": "monolith",
           "paths": [
-            # 1. Prioritize the HDD mount point to ensure it is selected first
-            "/mnt/lab-backups/music-library",
-            # 2. Secondary/Fallback paths (optional, consider removing to force failure if HDD is unmounted)
-            "/mnt/k8s-worker",
-            "/opt/local-path-provisioner"
+            "/mnt/ssd-a"
           ]
         }
       ]
     }
-=== ./kubernetes/cluster/storage/slow-hdd.yaml ===
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: slow
-provisioner: rancher.io/local-path
-volumeBindingMode: WaitForFirstConsumer
-parameters:
-  nodePath: /mnt/lab-backups
-=== ./kubernetes/cluster/storage/tunes.yaml ===
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: tunes
-provisioner: rancher.io/local-path
-parameters:
-  # This MUST match the path in your local-path-config exactly
-  nodePath: /mnt/lab-backups/music-library
-reclaimPolicy: Retain
-volumeBindingMode: WaitForFirstConsumer
+
+=== ./kubernetes/cluster/storage/Storage Setup.md ===
+
+```Text
+
+- **The Brain (`etcd`):** Isolated on your 238G drive to prevent cluster crashes during heavy disk I/O.
+    
+- **The Muscle (`fast`):** Ready for apps that need speed on your 465G SSD.
+    
+- **The Attic (`slow`):** Ready for the big, heavy data on your 1.8T HDD.
+  
+```
+
+
+
 === ./network/omada/hardware.md ===
 
 - OC200 controller
@@ -1262,17 +1341,134 @@ Personal Kubernetes home lab documentation, configurations, and manifests.
 
 ## Finished Projects
 - Navidrome audio server with ~1TB FLAC/MP3 library
+- Linux Samba share - for Wife & Daughter's file backups
 
 ## Next Project
 - Minecraft Server for the Wife and Daughter
 
 ## Pending Projects
-- File server, local backup solution for daughter's iPad art and wife's crochet patterns & notes
 - Always-on DNS resolver + full-stack monitoring node.
-- Upgrade Worker Node hardware with Ryzen and 8TB HDD in place of the 2TB HDD
+- Upgrade Worker Node hardware with Ryzen, max ram, and 8TB HDD
 
 ## Status
 Online
+
+=== ./services/fileserver/ansible/group_vars/all/vars.yml ===
+# TODO: vault these credentials before sharing this repo publicly
+# Run: ansible-vault encrypt services/fileserver/ansible/group_vars/all/vars.yml
+# Then move passwords into vault.yml and reference here
+
+samba_user: vault
+samba_password: "bubbie"      # ← replace before deploying
+
+james_user: james
+james_password: "junia"         # ← replace before deploying
+
+vault_share_name: vault
+vault_share_path: /mnt/ssd-b/vault
+
+studio_share_name: studio-archive
+studio_share_path: /mnt/lab-backups/studio-archive
+
+=== ./services/fileserver/ansible/playbooks/fileserver.yml ===
+---
+- name: Configure Samba file server (vault + studio-archive)
+  hosts: monolith
+  become: true
+
+  vars_files:
+    - ../group_vars/all/vars.yml
+
+  tasks:
+    - name: Install Samba and dependencies
+      ansible.builtin.apt:
+        name:
+          - samba
+          - expect
+          - python3-pexpect
+          - ufw
+        state: present
+        update_cache: true
+
+    - name: Create vault Samba user
+      ansible.builtin.user:
+        name: "{{ samba_user }}"
+        shell: /sbin/nologin
+        create_home: false
+        state: present
+
+    - name: Create james Samba user
+      ansible.builtin.user:
+        name: "{{ james_user }}"
+        shell: /sbin/nologin
+        create_home: false
+        state: present
+
+    - name: Create vault share directory
+      ansible.builtin.file:
+        path: "{{ vault_share_path }}"
+        state: directory
+        mode: "0775"
+        owner: "{{ samba_user }}"
+        group: "{{ samba_user }}"
+
+    - name: Create studio-archive share directory
+      ansible.builtin.file:
+        path: "{{ studio_share_path }}"
+        state: directory
+        mode: "0770"
+        owner: "{{ james_user }}"
+        group: "{{ james_user }}"
+
+    - name: Set Samba password for vault
+      ansible.builtin.expect:
+        command: smbpasswd -a {{ samba_user }}
+        responses:
+          "New SMB password:": "{{ samba_password }}"
+          "Retype new SMB password:": "{{ samba_password }}"
+      no_log: true
+      changed_when: false
+
+    - name: Enable vault Samba user
+      ansible.builtin.shell: smbpasswd -e {{ samba_user }}
+      changed_when: false
+
+    - name: Set Samba password for james
+      ansible.builtin.expect:
+        command: smbpasswd -a {{ james_user }}
+        responses:
+          "New SMB password:": "{{ james_password }}"
+          "Retype new SMB password:": "{{ james_password }}"
+      no_log: true
+      changed_when: false
+
+    - name: Enable james Samba user
+      ansible.builtin.shell: smbpasswd -e {{ james_user }}
+      changed_when: false
+
+    - name: Write smb.conf
+      ansible.builtin.template:
+        src: ../templates/smb.conf.j2
+        dest: /etc/samba/smb.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart Samba
+
+    - name: Enable and start Samba services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+      loop:
+        - smbd
+        - nmbd
+
+  handlers:
+    - name: Restart Samba
+      ansible.builtin.systemd:
+        name: smbd
+        state: restarted
 
 === ./services/minecraft/ansible/playbooks/import-world.yml ===
 ---
@@ -1420,6 +1616,118 @@ spec:
     - port: 19132
       targetPort: 19132
       protocol: UDP
+=== ./services/navidrome/kubernetes/configmap.yaml ===
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: navidrome-config
+  namespace: navidrome
+data:
+  ND_SCANSCHEDULE: "1h"
+  ND_LOGLEVEL: "info"
+  ND_MUSICFOLDER: "/music"
+  ND_DATAFOLDER: "/data"
+
+=== ./services/navidrome/kubernetes/deployment.yaml ===
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: navidrome
+  namespace: navidrome
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: navidrome
+  template:
+    metadata:
+      labels:
+        app: navidrome
+    spec:
+      containers:
+        - name: navidrome
+          image: deluan/navidrome:latest
+          envFrom:
+            - configMapRef:
+                name: navidrome-config
+          ports:
+            - containerPort: 4533
+          volumeMounts:
+            - name: db-storage
+              mountPath: /data
+            - name: music-storage
+              mountPath: /music
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
+      volumes:
+        - name: db-storage
+          persistentVolumeClaim:
+            claimName: navidrome-db
+        - name: music-storage
+          hostPath:
+            path: /mnt/lab-backups/music-library  # → /mnt/hdd/music-library after 8TB swap
+            type: Directory
+
+=== ./services/navidrome/kubernetes/ingress.yaml ===
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: navidrome
+  namespace: navidrome
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: navidrome
+                port:
+                  number: 4533
+
+=== ./services/navidrome/kubernetes/namespace.yaml ===
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: navidrome
+
+=== ./services/navidrome/kubernetes/pvc.yaml ===
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: navidrome-db
+  namespace: navidrome
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 2Gi
+
+=== ./services/navidrome/kubernetes/service.yaml ===
+apiVersion: v1
+kind: Service
+metadata:
+  name: navidrome
+  namespace: navidrome
+spec:
+  type: NodePort
+  selector:
+    app: navidrome
+  ports:
+    - port: 4533
+      targetPort: 4533
+      nodePort: 30533  # Access via http://monolith.local:30533
+
 === ./services/watchtower/ansible/playbooks/dns.yml ===
 
 === ./services/watchtower/ansible/playbooks/exporters.yml ===
