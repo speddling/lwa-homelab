@@ -1,19 +1,24 @@
 ---
-- name: Create AdGuard Home directory
-  file:
-    path: /opt/AdGuardHome
-    state: directory
-    owner: root
-    group: root
-    mode: '0755'
-
 - name: Check if AdGuard Home is already installed
   stat:
     path: /opt/AdGuardHome/AdGuardHome
   register: agh_binary
 
-- name: Download and install AdGuard Home
-  shell: curl -sSL https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/scripts/install.sh | sh -s -- -d /opt/AdGuardHome
+- name: Download AdGuard Home tarball
+  get_url:
+    url: https://github.com/AdguardTeam/AdGuardHome/releases/latest/download/AdGuardHome_linux_amd64.tar.gz
+    dest: /tmp/AdGuardHome.tar.gz
+  when: not agh_binary.stat.exists
+
+- name: Extract AdGuard Home
+  unarchive:
+    src: /tmp/AdGuardHome.tar.gz
+    dest: /opt/
+    remote_src: yes
+  when: not agh_binary.stat.exists
+
+- name: Install AdGuard Home service
+  command: /opt/AdGuardHome/AdGuardHome -s install
   when: not agh_binary.stat.exists
 
 - name: Deploy AdGuard Home config
