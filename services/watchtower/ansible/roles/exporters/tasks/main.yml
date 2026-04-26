@@ -159,13 +159,18 @@
     path: /usr/local/bin/adguard_exporter
   register: adguard_exporter_binary
 
-- name: Download adguard_exporter binary
-  get_url:
-    url: https://github.com/henrywhitaker3/adguard-exporter/releases/latest/download/adguard-exporter_linux_amd64
-    dest: /usr/local/bin/adguard_exporter
-    owner: root
-    group: root
-    mode: '0755'
+- name: Install Go (needed to build adguard_exporter)
+  apt:
+    name: golang
+    state: present
+    update_cache: yes
+  when: not adguard_exporter_binary.stat.exists
+
+- name: Build adguard_exporter from source
+  shell: |
+    export HOME=/root
+    go install github.com/henrywhitaker3/adguard-exporter@latest
+    cp /root/go/bin/adguard-exporter /usr/local/bin/adguard_exporter
   when: not adguard_exporter_binary.stat.exists
 
 - name: Deploy adguard_exporter systemd unit
