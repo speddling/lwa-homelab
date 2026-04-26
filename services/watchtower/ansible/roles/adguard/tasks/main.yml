@@ -1,3 +1,32 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# tasks file for adguard
+- name: Create AdGuard Home directory
+  file:
+    path: /opt/AdGuardHome
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Check if AdGuard Home is already installed
+  stat:
+    path: /opt/AdGuardHome/AdGuardHome
+  register: agh_binary
+
+- name: Download and install AdGuard Home
+  shell: curl -sSL https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/scripts/install.sh | sh -s -- -d /opt/AdGuardHome
+  when: not agh_binary.stat.exists
+
+- name: Deploy AdGuard Home config
+  template:
+    src: AdGuardHome.yaml.j2
+    dest: /opt/AdGuardHome/AdGuardHome.yaml
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart adguardhome
+
+- name: Enable and start AdGuard Home
+  systemd:
+    name: AdGuardHome
+    enabled: yes
+    state: started

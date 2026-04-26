@@ -1,9 +1,19 @@
 ---
-- name: Install unbound
+- name: Install unbound and dns utilities
   apt:
-    name: unbound
+    name:
+      - unbound
+      - dnsutils
     state: present
     update_cache: yes
+
+- name: Download root hints
+  get_url:
+    url: https://www.internic.net/domain/named.root
+    dest: /var/lib/unbound/root.hints
+    owner: root
+    group: root
+    mode: '0644'
 
 - name: Disable systemd-resolved stub listener
   lineinfile:

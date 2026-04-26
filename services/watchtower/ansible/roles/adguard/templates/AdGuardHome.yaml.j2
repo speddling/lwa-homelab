@@ -1,0 +1,73 @@
+http:
+  pprof:
+    port: 6060
+    enabled: false
+  address: 0.0.0.0:3000
+  session_ttl: 720h
+
+users:
+  - name: admin
+    password: "$2y$10$placeholder_change_this_in_vault"
+
+auth_attempts: 5
+block_auth_min: 15
+
+dns:
+  bind_hosts:
+    - 0.0.0.0
+  port: 53
+  upstream_dns:
+    - 127.0.0.1:5335
+  bootstrap_dns:
+    - 1.1.1.1
+    - 8.8.8.8
+  fallback_dns:
+    - 1.1.1.1
+  use_http3_upstreams: false
+  cache_size: 4194304
+  cache_ttl_min: 0
+  cache_ttl_max: 0
+  enable_dnssec: true
+  filtering_enabled: true
+  filters_update_interval: 24
+
+filtering:
+  rewrites:
+    - domain: watchtower.local
+      answer: 192.168.0.21
+    - domain: grafana.local
+      answer: 192.168.0.21
+    - domain: monolith.local
+      answer: 192.168.0.20
+    - domain: navidrome.local
+      answer: 192.168.0.20
+
+filters:
+  - enabled: true
+    url: https://hagezi.github.io/dns-blocklists/adblock/multi.txt
+    name: Hagezi Multi Normal
+    id: 1
+  - enabled: true
+    url: https://big.oisd.nl/domainswild
+    name: OISD Big
+    id: 2
+  - enabled: true
+    url: https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+    name: Steven Black
+    id: 3
+
+log:
+  file: ""
+  max_backups: 0
+  max_size: 100
+  max_age: 3
+  compress: false
+  local_time: false
+  verbose: false
+
+os:
+  group: ""
+  user: ""
+  rlimit_nofile: 0
+
+schema_version: 28
