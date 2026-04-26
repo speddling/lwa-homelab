@@ -1,0 +1,8 @@
+---
+- name: Configure DNS layer
+  hosts: watchtower
+  become: yes
+
+  roles:
+    - unbound
+    - adguard
