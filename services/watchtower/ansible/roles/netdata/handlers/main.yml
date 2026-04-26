@@ -1,3 +1,5 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# handlers file for netdata
+- name: restart netdata
+  systemd:
+    name: netdata
+    state: restarted

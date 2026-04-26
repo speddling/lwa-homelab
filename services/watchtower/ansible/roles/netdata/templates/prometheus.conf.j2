@@ -1,0 +1,9 @@
+[exporting:global]
+  enabled = yes
+
+[prometheus:exporter]
+  enabled = yes
+  destination = localhost:9090
+  data source = average
+  update every = 10
+  send charts matching = *

@@ -1,3 +1,40 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# tasks file for netdata
+- name: Check if Netdata is already installed
+  stat:
+    path: /usr/sbin/netdata
+  register: netdata_binary
+
+- name: Download Netdata install script
+  get_url:
+    url: https://my-netdata.io/kickstart.sh
+    dest: /tmp/netdata-kickstart.sh
+    mode: '0755'
+  when: not netdata_binary.stat.exists
+
+- name: Install Netdata
+  shell: /tmp/netdata-kickstart.sh --non-interactive --dont-start-it
+  when: not netdata_binary.stat.exists
+
+- name: Deploy Netdata config
+  template:
+    src: netdata.conf.j2
+    dest: /etc/netdata/netdata.conf
+    owner: netdata
+    group: netdata
+    mode: '0644'
+  notify: restart netdata
+
+- name: Deploy Prometheus exporter config
+  template:
+    src: prometheus.conf.j2
+    dest: /etc/netdata/exporting.conf
+    owner: netdata
+    group: netdata
+    mode: '0644'
+  notify: restart netdata
+
+- name: Enable and start Netdata
+  systemd:
+    name: netdata
+    enabled: yes
+    state: started
