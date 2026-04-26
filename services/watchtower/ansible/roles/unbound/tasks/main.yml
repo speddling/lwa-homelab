@@ -1,3 +1,28 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# tasks file for unbound
+- name: Install unbound
+  apt:
+    name: unbound
+    state: present
+    update_cache: yes
+
+- name: Disable systemd-resolved stub listener
+  lineinfile:
+    path: /etc/systemd/resolved.conf
+    regexp: '^#?DNSStubListener='
+    line: 'DNSStubListener=no'
+  notify: restart systemd-resolved
+
+- name: Deploy unbound config
+  template:
+    src: watchtower.conf.j2
+    dest: /etc/unbound/unbound.conf.d/watchtower.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart unbound
+
+- name: Enable and start unbound
+  systemd:
+    name: unbound
+    enabled: yes
+    state: started

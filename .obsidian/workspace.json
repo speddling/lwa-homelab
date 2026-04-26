@@ -184,8 +184,9 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "165dadc935b0cab3",
+  "active": "bffb361906a7587a",
   "lastOpenFiles": [
+    "services/watchtower/ansible/roles/unbound/templates/watchtower.conf.j2",
     "services/watchtower/ansible/roles/grafana/handlers/main.yml",
     "services/watchtower/ansible/roles/grafana/handlers",
     "services/watchtower/ansible/roles/grafana/templates",
@@ -196,7 +197,6 @@
     "services/watchtower/ansible/roles/grafana/meta",
     "services/watchtower/ansible/roles/grafana/tests/test.yml",
     "services/watchtower/ansible/roles/grafana/tests/inventory",
-    "services/watchtower/ansible/roles/grafana/tests",
     "services/watchtower/ansible/roles/grafana/README.md",
     "services/watchtower/ansible/roles/netdata/README.md",
     "services/watchtower/ansible/roles/exporters/README.md",

@@ -1,3 +1,10 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# handlers file for unbound
+- name: restart unbound
+  systemd:
+    name: unbound
+    state: restarted
+
+- name: restart systemd-resolved
+  systemd:
+    name: systemd-resolved
+    state: restarted
