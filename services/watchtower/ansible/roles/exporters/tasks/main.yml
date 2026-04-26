@@ -161,7 +161,7 @@
 
 - name: Download adguard_exporter binary
   get_url:
-    url: https://github.com/ebrianne/adguard-exporter/releases/latest/download/adguard_exporter-linux-amd64
+    url: https://github.com/henrywhitaker3/adguard-exporter/releases/latest/download/adguard-exporter_linux_amd64
     dest: /usr/local/bin/adguard_exporter
     owner: root
     group: root
