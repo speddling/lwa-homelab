@@ -51,6 +51,15 @@
     group: grafana
     mode: '0755'
 
+- name: Deploy Grafana alerting provisioning
+  template:
+    src: alerting.yml.j2
+    dest: /etc/grafana/provisioning/alerting/sentinel.yml
+    owner: root
+    group: grafana
+    mode: '0640'
+  notify: restart grafana
+
 - name: Enable and start Grafana
   systemd:
     name: grafana-server
