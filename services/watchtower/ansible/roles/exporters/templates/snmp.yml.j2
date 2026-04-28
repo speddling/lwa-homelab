@@ -1,10 +1,15 @@
 auths:
+  littlewolfacres_v2:
+    community: {{ vault_snmp_community }}
+    version: 2
+
   littlewolfacres_v3:
     community: {{ vault_snmp_community }}
     security_level: authNoPriv
     username: {{ vault_snmp_v3_username }}
     password: {{ vault_snmp_v3_password }}
     auth_protocol: SHA
+    version: 3
 
 modules:
   if_mib:
