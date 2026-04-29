@@ -31,7 +31,7 @@ Personal Kubernetes home lab documentation, configurations, and manifests.
 
 ## Next Project
 - Minecraft Server for the Wife and Daughter
-- 
+- rewire closet then reconfigure Omada setup.
 
 ## Pending Projects
 - Upgrade Worker Node hardware with Ryzen, max ram, and 8TB HDD
