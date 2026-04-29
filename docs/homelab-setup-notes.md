@@ -255,27 +255,7 @@ Since you have a mix of NVMe, SATA SSDs, and a mechanical HDD, here is the most 
 -------------------
 New info / conversations:
 
-## 1. The "Must-Have" Dashboard: Lens or k9s
-
-If you are still typing `kubectl get pods` every 30 seconds, you're working too hard.
-
-- **[k9s](https://k9scli.io/):** (Terminal-based) This is the "gold standard" for power users. It’s a lightning-fast TUI (Terminal User Interface) that lets you view logs, shell into containers, and delete pods with single keystrokes.
-    
-    - _Install:_ `brew install derailed/k9s/k9s`
-        
-- **[OpenLens](https://github.com/lensapp/lens):** (GUI-based) If you want a visual overview of your node health, storage usage, and networking.
-    
-
-## 2. Infrastructure as Code: Terraform / OpenTofu
-
-Since you mentioned Terraform, the real question is: **Is Terraform managing the Monolith's OS/Virtualization, or just the K8s resources?**
-
-- **ProxMox Provider:** If you ever move from bare-metal Ubuntu to a hypervisor like Proxmox, Terraform can spin up your VMs automatically.
-    
-- **Cloudflare Provider:** If you decide to expose Navidrome to the web, use Terraform to manage your DNS records and Tunnels. This keeps your "homelab-as-code" goal alive.
-    
-
-## 3. The Secret Weapon: Talos Linux or Flux/ArgoCD
+## Talos Linux or Flux/ArgoCD
 
 Since you are already using GitHub Actions, you are 90% of the way to a "Pull-based" deployment model.
 
@@ -284,9 +264,9 @@ Since you are already using GitHub Actions, you are 90% of the way to a "Pull-ba
     - _Why?_ It fixes "Configuration Drift." If someone manually changes a setting on the Monolith, Flux will automatically revert it to match your GitHub repo.
         
 
-## 4. Local Development: Tilt or Skaffold
+## Local Development: Tilt or Skaffold
 
-If you ever start writing your own code or custom manifests and hate waiting for a GitHub Action to run just to see a small change:
+hate waiting for a GitHub Action to run just to see a small change:
 
 - **[Tilt](https://tilt.dev/):** It watches your local directory on your Mac. The second you save a file, it syncs the change directly into the Kubernetes cluster on the Monolith. It makes remote K8s feel like local development.
     
@@ -296,31 +276,7 @@ If you ever start writing your own code or custom manifests and hate waiting for
 - **[Kubectx & Kubens](https://github.com/ahmetb/kubectx):** Essential if you eventually add more clusters or namespaces. Switch contexts (`kubectx monolith`) and namespaces (`kubens navidrome`) instantly.
     
 - **[Starship Prompt](https://starship.rs/):** A customizable shell prompt that will show you exactly which K8s context and namespace you are currently targeting, so you never accidentally delete something in the wrong place.
-    
 
----
-
-### My Recommendation for Right Now:
-
-Don't over-tool yet. Start with **k9s**. It will give you a "god-view" of your Monolith from your Mac terminal while that 800GB transfer is running. You can watch the Navidrome logs in real-time to see when it starts scanning those new folders.
-
-**Are you planning on keeping the Monolith as a single "all-in-one" node, or are you thinking about adding more hardware later?** That usually dictates which orchestrator (Terraform vs. Ansible vs. Flux) wins.
-
-
-
--------------------------
-
-k9s sound like a logical step, is it on MacPort?
-Terraform provisioned Monolith and deployed the K3s
-#3 sound cool, but is a 'later' addition.
-
-  
-
-For now, Monolith is the hardware I own. I think next steps will be grabbing an 8TB HDD to replace the vintage 2TB HDD and replacing my A10 cpu with a best I can get cheap Ryzen upgrade and possibly max out the ram with speed and spec to match the A10 -> Ryzen move
-
-Yes, **k9s** is on MacPorts. You can grab it with: `sudo port install k9s`
-
-It’s the perfect "cockpit" for your Mac terminal. While that 800GB rsync is chugging along, you can open k9s, hit `:pods`, and watch the Navidrome logs in real-time to see if it starts freaking out (or successfully scanning) as the music files land.
 
 ---
 
@@ -369,9 +325,6 @@ Replacing the "vintage" 2TB with an **8TB HDD** is a solid move. When that time 
     
 3. Update your Terraform/Kubernetes `hostPath` to point to the new disk.
 
-
-
-
 ----------------
 
 Asus VM40B 8gb + 1tb SSD  
@@ -389,3 +342,22 @@ Asus VM40B 8gb + 1tb SSD
 - **Hot storage** (NVMe) — active model weights, datasets being trained on
 - **Warm storage** (SSD) — projects, code, containers
 - **Cold storage** (HDD) — audio library, backups, archived models
+
+---
+
+
+## Working With Claude
+
+To share this repo with Claude for review or updates, run from the repo root:
+
+```bash
+find . -type f \( -name "*.yaml" -o -name "*.md" -o -name "*.yml" \) \
+  ! -path "./.obsidian/*" \
+  | sort | while read f; do
+    echo "=== $f ==="
+    cat "$f"
+    echo ""
+  done > homelab-dump.txt
+```
+
+Upload `homelab-dump.txt` directly in the Claude chat window.

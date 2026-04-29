@@ -42,7 +42,7 @@ The music library is mounted directly via `hostPath` in the Navidrome deployment
 └── pvc-*/                        ← k3s local-path provisioner directories
 
 /mnt/ssd-b/
-└── (reserved for file server)
+└── (fileserver)
 
 /mnt/lab-backups/
 └── music-library/                ← Navidrome audio library (~605G)
@@ -71,23 +71,6 @@ When the 8TB HDD arrives to replace the 2TB:
 
 ## Post-Watchtower Cleanup
 - Remove UFW from fileserver Ansible playbook — firewall policy will be managed at the network layer via ER605 / Watchtower
-
-
-## Working With Claude
-
-To share this repo with Claude for review or updates, run from the repo root:
-
-```bash
-find . -type f \( -name "*.yaml" -o -name "*.md" -o -name "*.yml" \) \
-  ! -path "./.obsidian/*" \
-  | sort | while read f; do
-    echo "=== $f ==="
-    cat "$f"
-    echo ""
-  done > homelab-dump.txt
-```
-
-Upload `homelab-dump.txt` directly in the Claude chat window.
 
 ---
 

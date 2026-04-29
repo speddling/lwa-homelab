@@ -14,7 +14,7 @@ All static assignments are DHCP MAC-bound in the ER605. Do not set static IPs at
 | 192.168.0.109 | Studio             | Ubuntu Studio — DAW / KDE Workstation      |
 | 192.168.0.1   | ER605 v2.0         | Gigabit Multi-WAN VPN Router               |
 | 192.168.0.2   | EAP245-Foyer       | Access Point / Mesh                        |
-| 192.168.0.5   | EAP245-Yarn-Studio |                                            |
+| 192.168.0.5   | EAP245-Yarn-Studio | Access Point / Mesh                        |
 
 All other devices use dynamic DHCP leases.
 
@@ -22,22 +22,10 @@ All other devices use dynamic DHCP leases.
 
 ## Notes
 
-- DNS resolution via hostname is pending Watchtower build — use IPs until then
 - When Watchtower DNS is live, all fstab and Ansible inventory files referencing IPs should be updated to hostnames
 - ER605 manages routing and firewall at the network boundary
 
 ---
 
-## SSH Aliases (Apex ~/.zshrc)
-
-```bash
-# Lab hosts
-alias monolith='ssh speddling@192.168.0.20'
-alias watchtower='ssh speddling@192.168.0.21'
-alias studio='ssh speddling@192.168.0.109'
-```
-
----
-
-*Last updated: 2026-04-24*
+*Last updated: 2026-04-29*
 
