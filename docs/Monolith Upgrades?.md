@@ -1,5 +1,5 @@
 # ASRock AB350 Pro4 — Upgrade Summary
-**Use case:** k3s Kubernetes lab · Navidrome audio server · LAN fileshare/backup (3 users) · CS degree coursework (Python → Front End → Back End/DB) · Occasional small AI/ML school projects
+**Use case:** k3s Kubernetes lab · Navidrome audio server · LAN fileshare/backup
 
 ---
 
@@ -33,80 +33,29 @@ Before installing any Ryzen 5000 (Vermeer) CPU, you **must** update the BIOS inc
 
 ---
 
-## Option 1 — Recommended: Ryzen 5 5600G + 64GB DDR4
+## Planned Upgrade: Ryzen 5 5600G + 64GB DDR4
 
 ### CPU: AMD Ryzen 5 5600G
-| Spec | Value |
-|---|---|
-| Architecture | Zen 3 (Cezanne) |
-| Cores / Threads | 6c / 12t |
-| Base / Boost | 3.9 GHz / 4.4 GHz |
-| TDP | 65W |
-| iGPU | Radeon Vega 7 (no discrete GPU needed) |
-| Estimated price | ~$120–140 |
+| Spec            | Value                                  |
+| --------------- | -------------------------------------- |
+| Architecture    | Zen 3 (Cezanne)                        |
+| Cores / Threads | 6c / 12t                               |
+| Base / Boost    | 3.9 GHz / 4.4 GHz                      |
+| TDP             | 65W                                    |
+| iGPU            | Radeon Vega 7 (no discrete GPU needed) |
+|                 |                                        |
 
-**Why this wins for your use case:**
-- Integrated Vega 7 GPU satisfies the board's display requirement — no throwaway GPU purchase
-- 65W TDP keeps the system cool and quiet 24/7
-- Zen 3 IPC is a major generational leap over your current Raven Ridge
-- 6c/12t handles k3s, Navidrome, fileshare, and Python coursework simultaneously without strain
-- No GPU means one fewer component to manage/fail
-
-**iGPU gotcha — RAM sharing:**
-- The Vega 7 iGPU carves out system RAM as VRAM (default 512MB–2GB)
-- Since you're headless, **set iGPU memory allocation to 512MB in BIOS** to minimize the reservation
-- With 64GB total, this is a negligible tradeoff
 
 ---
 
-## Option 2 — Alternative: Ryzen 7 5700X + GT 710
-
-### CPU: AMD Ryzen 7 5700X
-| Spec | Value |
-|---|---|
-| Architecture | Zen 3 |
-| Cores / Threads | 8c / 16t |
-| Base / Boost | 3.4 GHz / 4.6 GHz |
-| TDP | 65W |
-| iGPU | None — discrete GPU required |
-| Estimated price | ~$140–180 |
-
-### GPU: NVIDIA GeForce GT 710 (display placeholder only)
-| Spec | Value |
-|---|---|
-| TDP | ~15–25W |
-| Power | Bus-powered (no PCIe power cable needed) |
-| Fanless options | Yes |
-| Estimated price | ~$25–45 |
-| Purpose | POST / BIOS access only — completely idle headless |
-
-**Why you might choose this instead:**
-- 2 extra cores (16 threads vs 12) if you ever run multi-hour training jobs or many simultaneous k3s pods
-- Zero RAM shared to GPU — full 64GB available to workloads
-- Still 65W TDP on the CPU
-
-**Honest assessment:** For your actual roadmap (Python coursework → front-end → back-end/DB, with cloud migration when projects outgrow local), the extra 2 cores are unlikely to matter. The 5600G is the cleaner, simpler, and slightly cheaper path.
-
----
-
-## RAM: 64GB DDR4-3200 CL16 (both options)
+## RAM: 64GB DDR4-3200 CL16
 
 **Configuration:** 4×16GB across all 4 slots (preferred over 2×32GB)
 
-**Why 4×16GB over 2×32GB:**
-- Populates all slots for maximum memory bandwidth — meaningful for CPU-bound ML inference
-- Leaves no slots unused
-- Slightly better dual-channel interleaving
-
-**Recommended kits:**
-- G.Skill RipjawsV 4×16GB DDR4-3200 CL16 (~$80–100)
-- Kingston Fury Beast 4×16GB DDR4-3200 CL16 (~$80–100)
-- Corsair Vengeance LPX 4×16GB DDR4-3200 CL16 (~$85–105)
-
-**Why 64GB for this use case:**
-- k3s overhead + Navidrome + fileshare + a DB container + app server container + dev tooling adds up quickly
-- 64GB lets you set generous resource limits without careful tuning — important quality of life in a home lab
-- Future-proofed for back-end/DB coursework where running Postgres, Redis, and app servers simultaneously is normal
+**Kits:**
+- G.Skill RipjawsV 4×16GB DDR4-3200 CL16
+- Kingston Fury Beast 4×16GB DDR4-3200 CL16 
+- Corsair Vengeance LPX 4×16GB DDR4-3200 CL16 
 
 > **Note:** DDR4-3200 is the official rated speed for Zen 3 on this board. No XMP/overclocking needed — it just works at spec.
 
