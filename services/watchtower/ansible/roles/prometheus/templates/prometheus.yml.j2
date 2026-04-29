@@ -34,14 +34,14 @@ scrape_configs:
       - target_label: __address__
         replacement: localhost:9116
 
-   - job_name: 'snmp-eap-yarns-studio'
-     static_configs:
+  - job_name: 'snmp-eap-yarn-studio'
+    static_configs:
       - targets: ['192.168.0.5']
-     metrics_path: /snmp
-     params:
+    metrics_path: /snmp
+    params:
       module: [if_mib]
       auth: [littlewolfacres_v2]
-     relabel_configs:
+    relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
       - source_labels: [__param_target]
