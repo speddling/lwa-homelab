@@ -27,5 +27,44 @@ All other devices use dynamic DHCP leases.
 
 ---
 
-*Last updated: 2026-04-29*
+**Network**  
+
+- ER605 interface traffic (in/out bytes, packets, errors per interface)
+- EAP245 Foyer interface stats
+- EAP245 Yarn Studio interface stats
+- Sagemcom FAST5688W (5G cell internet)— signal quality (RSRP, RSRQ, SINR), band, temperature, uptime, throughput
+
+**DNS**  
+
+- AdGuard Home — query rate, block rate, blocked domains, client counts, upstream latency
+- Unbound — cache hit rate, query types
+
+**Compute — Watchtower (Asus VM40b)**  
+
+- CPU usage, load average
+- Memory usage
+- Disk usage and I/O
+- Network throughput
+- All systemd service states
+
+**Compute — Monolith (old workstation, now Kubernetes lab)**  
+
+- CPU, memory, disk, network (same as Watchtower via node_exporter)
+
+**Uptime / Reachability**  
+
+- Blackbox exporter probing endpoints (HTTP, ICMP, TCP)
+
+**Power — UPS (pending budget for a** CP1500PFCLCD**)**  
+
+- Battery charge, runtime remaining, load percentage, input voltage, on-battery status
+
+**Security Cameras — NVR (planned)**  
+
+- HDD health and capacity
+- Channel online/offline status
+- Detection event counts
+
+---
+*Last updated: 2026-04-30*
 
