@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@mariozechner/pi-ai": "^0.72.1"
+  }
+}
