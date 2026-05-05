@@ -19,18 +19,18 @@ Personal Kubernetes home lab documentation, configurations, and manifests.
 
 ## Stack
 - Kubernetes via k3s
-- Terraform
+- Terraform Cloud
 - GitHub Actions
 - Ansible
-- Ubuntu Server 24.04 LTS on worker node
+- Ubuntu Server 24.04 LTS on worker and monitoring nodes
 
 ## Finished Projects
 - Navidrome audio server with ~1TB FLAC/MP3 library
 - Always-on DNS resolver + full-stack monitoring node (full IaC pipeline)
 - Linux Samba share - for Wife & Daughter's file backups
+- Minecraft Server for the Wife and Daughter
 
 ## Next Project
-- Minecraft Server for the Wife and Daughter
 - rewire closet then reconfigure Omada setup.
 
 ## Pending Projects

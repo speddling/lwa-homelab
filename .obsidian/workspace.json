@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/Pipeline considerations.md",
+                "file": "README.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Pipeline considerations"
+              "title": "README"
             }
           }
         ]
@@ -186,6 +186,7 @@
   },
   "active": "165dadc935b0cab3",
   "lastOpenFiles": [
+    "docs/Pipeline considerations.md",
     "services/watchtower/ansible/package-lock.json",
     "services/watchtower/ansible/package.json",
     "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/extra/realtime.test.ts",
@@ -196,7 +197,6 @@
     "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/v2/batch-finetuning.test.ts",
     "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/extra/structChat.test.ts",
     "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/vitest.config.ts",
-    "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/v2",
     "services/watchtower/ansible/node_modules/@mistralai/mistralai/RUNTIMES.md",
     "services/watchtower/ansible/node_modules/@mistralai/mistralai/README.md",
     "services/watchtower/ansible/node_modules/@mistralai/mistralai/FUNCTIONS.md",
