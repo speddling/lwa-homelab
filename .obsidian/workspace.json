@@ -186,18 +186,19 @@
   },
   "active": "165dadc935b0cab3",
   "lastOpenFiles": [
+    "services/watchtower/ansible/roles/tmobile_exporter/templates/tmobile_exporter.service.j2",
+    "services/watchtower/ansible/roles/tmobile_exporter/files/tmobile_exporter.py",
+    "services/watchtower/ansible/roles/tmobile_exporter/templates",
+    "services/watchtower/ansible/roles/tmobile_exporter/untitled folder",
+    "services/watchtower/ansible/roles/tmobile_exporter/handlers",
+    "services/watchtower/ansible/roles/tmobile_exporter/tasks",
+    "services/watchtower/ansible/roles/tmobile_exporter/files",
+    "services/watchtower/ansible/roles/tmobile_exporter",
+    "services/watchtower/ansible/roles/untitled folder",
     "README.md",
     "docs/Pipeline considerations.md",
     "services/watchtower/ansible/package-lock.json",
     "services/watchtower/ansible/package.json",
-    "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/extra/realtime.test.ts",
-    "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/v2/embeddings.test.ts",
-    "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/v2/discriminated-unions.test.ts",
-    "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/v2/classifiers.test.ts",
-    "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/v2/chat-completion.test.ts",
-    "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/v2/batch-finetuning.test.ts",
-    "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/extra/structChat.test.ts",
-    "services/watchtower/ansible/node_modules/@mistralai/mistralai/tests/vitest.config.ts",
     "services/watchtower/ansible/node_modules/@mistralai/mistralai/RUNTIMES.md",
     "services/watchtower/ansible/node_modules/@mistralai/mistralai/README.md",
     "services/watchtower/ansible/node_modules/@mistralai/mistralai/FUNCTIONS.md",
@@ -220,7 +221,6 @@
     "services/watchtower/ansible/node_modules/@mariozechner/pi-ai/README.md",
     "services/watchtower/ansible/node_modules/undici/README.md",
     "services/watchtower/ansible/node_modules/undici/types/README.md",
-    "services/watchtower/ansible/node_modules/zod/README.md",
-    "services/watchtower/ansible/node_modules/@aws-crypto/util/node_modules/@smithy/util-utf8/README.md"
+    "services/watchtower/ansible/node_modules/zod/README.md"
   ]
 }

@@ -1,0 +1,18 @@
+[Unit]
+Description=T-Mobile FAST 5688W Prometheus Exporter
+After=network.target
+
+[Service]
+Type=simple
+User=tmobile_exporter
+Group=tmobile_exporter
+ExecStart=/usr/bin/python3 /opt/tmobile_exporter/tmobile_exporter.py
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/tmp
+
+[Install]
+WantedBy=multi-user.target
