@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "README.md",
+                "file": "docs/homelab-state.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "homelab-state"
             }
           }
         ]
@@ -186,6 +186,7 @@
   },
   "active": "165dadc935b0cab3",
   "lastOpenFiles": [
+    "README.md",
     "docs/Pipeline considerations.md",
     "services/watchtower/ansible/package-lock.json",
     "services/watchtower/ansible/package.json",
@@ -220,7 +221,6 @@
     "services/watchtower/ansible/node_modules/undici/README.md",
     "services/watchtower/ansible/node_modules/undici/types/README.md",
     "services/watchtower/ansible/node_modules/zod/README.md",
-    "services/watchtower/ansible/node_modules/@aws-crypto/util/node_modules/@smithy/util-utf8/README.md",
-    "services/watchtower/ansible/node_modules/@aws-crypto/sha256-browser/node_modules/@smithy/is-array-buffer/README.md"
+    "services/watchtower/ansible/node_modules/@aws-crypto/util/node_modules/@smithy/util-utf8/README.md"
   ]
 }

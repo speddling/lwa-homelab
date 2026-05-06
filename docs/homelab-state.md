@@ -196,10 +196,6 @@ Primary k3s node. Runs all workloads. Named for its role as the single heavy nod
 - Fallback: `1.1.1.1`
 - Configured via `/etc/systemd/resolved.conf`
 
-### Pending
-
-- **File server** — structured family backup solution (daughter's iPad art, wife's crochet notes)
-- **UFW** — currently inactive, needs hardening pass
 
 ---
 
