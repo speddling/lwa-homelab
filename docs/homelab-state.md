@@ -408,14 +408,11 @@ gh workflow run deploy-watchtower.yml
 
 ## Pending Work
 
-| Item | Priority | Notes |
-|---|---|---|
-| Password rotation | High | All passwords exposed during setup session |
-| Monolith UFW hardening | High | Currently inactive |
-| Foyer AP cable run | Medium | Cat5e from spool, wiring closet cleanup |
-| Family file server | Medium | Structured backup for iPad art, crochet notes |
-| JetStream PoE switch | Low | Replaces unmanaged TL-SG1210P, enables SNMP per-port stats |
-| UPS — CyberPower CP1500PFCLCD | Low | NUT role ready, waiting on hardware budget |
-| Grafana custom dashboard | Low | Homelab overview — DNS rate, AP clients, uptime probes |
-| SNMP MIB generator | Low | Proper TP-Link MIB walk for richer metrics |
-| Omada DNS integration | Low | Point LAN clients at Watchtower via DHCP option |
+| Item                          | Priority | Notes                                                      |
+| ----------------------------- | -------- | ---------------------------------------------------------- |
+| Family file server            | Medium   | Structured backup for iPad art, crochet notes              |
+| JetStream PoE switch          | Low      | Replaces unmanaged TL-SG1210P, enables SNMP per-port stats |
+| UPS — CyberPower CP1500PFCLCD | Low      | NUT role ready, waiting on hardware budget                 |
+| Grafana custom dashboard      | Low      | Homelab overview — DNS rate, AP clients, uptime probes     |
+| SNMP MIB generator            | Low      | Proper TP-Link MIB walk for richer metrics                 |
+| Omada DNS integration         | Low      | Point LAN clients at Watchtower via DHCP option            |
