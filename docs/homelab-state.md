@@ -208,31 +208,10 @@ Primary k3s node. Runs all workloads. Named for its role as the single heavy nod
 | IP | 192.168.0.19 (DHCP MAC-bound) |
 | Role | Primary workstation — all authoring, config, remote ops originate here |
 
-### Shell Aliases (`~/.zprofile`)
-
-```bash
-# Navigation
-alias school="cd ~/school-codes"
-alias labs="cd ~/homelab"
-alias runs="cd ~/runbooks"
-
-# Lab hosts
-alias watchtower='ssh speddling@192.168.0.21'
-alias monolith='ssh speddling@192.168.0.20'
-alias studio='ssh speddling@192.168.0.109'
-```
 
 ---
 
 ## CLI Reference — Little Wolf Acres Homelab
-
-### SSH
-
-```bash
-watchtower              # SSH into Watchtower
-monolith                # SSH into Monolith
-studio                  # SSH into Studio
-```
 
 ### Service Health Checks (run on Watchtower)
 
@@ -413,6 +392,5 @@ gh workflow run deploy-watchtower.yml
 | Family file server            | Medium   | Structured backup for iPad art, crochet notes              |
 | JetStream PoE switch          | Low      | Replaces unmanaged TL-SG1210P, enables SNMP per-port stats |
 | UPS — CyberPower CP1500PFCLCD | Low      | NUT role ready, waiting on hardware budget                 |
-| Grafana custom dashboard      | Low      | Homelab overview — DNS rate, AP clients, uptime probes     |
 | SNMP MIB generator            | Low      | Proper TP-Link MIB walk for richer metrics                 |
 | Omada DNS integration         | Low      | Point LAN clients at Watchtower via DHCP option            |
