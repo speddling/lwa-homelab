@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/homelab-state.md",
+                "file": "docs/Monolith Upgrades?.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "homelab-state"
+              "title": "Monolith Upgrades?"
             }
           }
         ]
@@ -186,6 +186,7 @@
   },
   "active": "165dadc935b0cab3",
   "lastOpenFiles": [
+    "docs/homelab-state.md",
     "services/watchtower/ansible/roles/tmobile_exporter/handlers/main.yml",
     "services/watchtower/ansible/roles/tmobile_exporter/tasks/main.yml",
     "services/watchtower/ansible/playbooks/tmobile_exporter.yml",
@@ -196,7 +197,6 @@
     "services/watchtower/ansible/roles/tmobile_exporter/handlers",
     "services/watchtower/ansible/roles/tmobile_exporter/tasks",
     "services/watchtower/ansible/roles/tmobile_exporter/files",
-    "services/watchtower/ansible/roles/tmobile_exporter",
     "README.md",
     "docs/Pipeline considerations.md",
     "services/watchtower/ansible/node_modules/@mistralai/mistralai/RUNTIMES.md",
