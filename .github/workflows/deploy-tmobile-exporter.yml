@@ -1,0 +1,21 @@
+name: Deploy T-Mobile Exporter
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'services/watchtower/ansible/roles/tmobile_exporter/**'
+      - 'services/watchtower/ansible/playbooks/tmobile_exporter.yml'
+      - '.github/workflows/deploy-tmobile-exporter.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, watchtower]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Ansible — T-Mobile Exporter
+        working-directory: services/watchtower/ansible
+        run: |
+          ansible-playbook -i inventory.ini playbooks/tmobile_exporter.yml
