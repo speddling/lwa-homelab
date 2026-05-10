@@ -2,12 +2,13 @@
 
 ## Physical Drives
 
-| Device | Size | Type | Mount | Purpose |
-|---|---|---|---|---|
-| nvme0n1 | 476.9G | NVMe SSD | `/` (150G LVM) | Boot / OS / k3s — remaining space is unallocated headroom |
-| sda | 465.8G | SATA SSD | `/mnt/ssd-a` | k8s local-path provisioner (PVC storage) |
-| sdb | 238.5G | SATA SSD | `/mnt/ssd-b` | File server / family backups |
-| sdc | 1.8T | SATA HDD | `/mnt/lab-backups` | Music library — replace with 8TB HDD when upgraded |
+| Device  | Size   | Type     | Mount          | Purpose                                       |
+| ------- | ------ | -------- | -------------- | --------------------------------------------- |
+| nvme0n1 | 476.9G | NVMe SSD | `/` (150G LVM) | Boot / OS / k3s / unallocated headroom        |
+| sda     | 465.8G | SATA SSD | `/mnt/ssd-a`   | k8s local-path provisioner (PVC storage)      |
+| sdb     | 238.5G | SATA SSD | `/mnt/ssd-b`   | isolated `work space` and  `client jumpbox`   |
+| sdc     | 3.6T   | SATA HDD | `/mnt/hdd-c`   | Music library / fileserver / bulk drive space |
+| sdd     | 1.8T   | SATA HDD | `/mnt/hdd-d`   | music                                         |
 
 > **Note:** The AB350 Pro4 throttles NVMe to PCIe 2.0 x2. The unallocated NVMe space is intentional headroom for future growth, not an oversight.
 
