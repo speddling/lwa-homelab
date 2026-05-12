@@ -394,6 +394,22 @@ git push
 gh workflow run deploy-watchtower.yml
 ```
 
+Homelab Text Dump
+find . -type f \( -name "*.yaml" -o -name "*.md" -o -name "*.yml" \) \
+
+  ! -path "./.obsidian/*" \
+
+  | sort | while read f; do
+
+    echo "=== $f ==="
+
+    cat "$f"
+
+    echo ""
+
+  done > homelab-dump.txt
+
+
 ---
 
 ## Pending Work
