@@ -186,6 +186,7 @@
   },
   "active": "165dadc935b0cab3",
   "lastOpenFiles": [
+    "services/watchtower/ansible/roles/prometheus/templates/prometheus.yml~.j2",
     "services/watchtower/ansible/playbooks/reolink_exporter.yml",
     "services/watchtower/ansible/roles/reolink_exporter/files/reolink_exporter.py",
     "services/watchtower/ansible/roles/reolink_exporter/templates/reolink_exporter.service.j2",
@@ -196,7 +197,6 @@
     "services/watchtower/ansible/roles/reolink_exporter/untitled folder",
     "services/watchtower/ansible/roles/reolink_exporter/tasks",
     "services/watchtower/ansible/roles/reolink_exporter/handlers",
-    "services/watchtower/ansible/roles/reolink_exporter/files",
     "docs/homelab-state.md",
     "docs/K9s Reference.md",
     "docs/network.md",
