@@ -394,7 +394,10 @@ git push
 gh workflow run deploy-watchtower.yml
 ```
 
-Homelab Text Dump
+### Homelab Text Dump
+
+```bash
+
 find . -type f \( -name "*.yaml" -o -name "*.md" -o -name "*.yml" \) \
 
   ! -path "./.obsidian/*" \
@@ -408,7 +411,7 @@ find . -type f \( -name "*.yaml" -o -name "*.md" -o -name "*.yml" \) \
     echo ""
 
   done > homelab-dump.txt
-
+```
 
 ---
 
