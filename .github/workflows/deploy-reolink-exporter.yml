@@ -1,0 +1,27 @@
+name: Deploy Reolink Exporter
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'services/watchtower/ansible/roles/reolink_exporter/**'
+      - 'services/watchtower/ansible/playbooks/reolink_exporter.yml'
+      - '.github/workflows/deploy-reolink-exporter.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, watchtower]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write vault password
+        run: |
+          mkdir -p ~/homelab
+          echo '${{ secrets.ANSIBLE_VAULT_PASSWORD }}' > ~/homelab/.vault_pass
+          chmod 600 ~/homelab/.vault_pass
+
+      - name: Run Ansible — Reolink Exporter
+        working-directory: services/watchtower/ansible
+        run: |
+          ansible-playbook -i inventory.ini playbooks/reolink_exporter.yml

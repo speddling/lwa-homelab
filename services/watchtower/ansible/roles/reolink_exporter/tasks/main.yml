@@ -1,0 +1,47 @@
+---
+- name: Create reolink_exporter system user
+  ansible.builtin.user:
+    name: reolink_exporter
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+
+- name: Install python3 dependencies
+  ansible.builtin.apt:
+    name:
+      - python3-requests
+      - python3-prometheus-client
+    state: present
+    update_cache: true
+
+- name: Create exporter directory
+  ansible.builtin.file:
+    path: /opt/reolink_exporter
+    state: directory
+    owner: reolink_exporter
+    group: reolink_exporter
+    mode: '0755'
+
+- name: Deploy exporter script
+  ansible.builtin.copy:
+    src: reolink_exporter.py
+    dest: /opt/reolink_exporter/reolink_exporter.py
+    owner: reolink_exporter
+    group: reolink_exporter
+    mode: '0755'
+  notify: Restart reolink_exporter
+
+- name: Deploy systemd unit
+  ansible.builtin.template:
+    src: reolink_exporter.service.j2
+    dest: /etc/systemd/system/reolink_exporter.service
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart reolink_exporter
+
+- name: Enable and start reolink_exporter
+  ansible.builtin.systemd:
+    name: reolink_exporter
+    enabled: true
+    state: started

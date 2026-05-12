@@ -1,0 +1,6 @@
+---
+- name: Deploy Reolink NVR Exporter
+  hosts: watchtower
+  become: true
+  roles:
+    - reolink_exporter

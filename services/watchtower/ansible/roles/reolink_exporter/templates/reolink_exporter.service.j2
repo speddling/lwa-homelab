@@ -1,0 +1,26 @@
+[Unit]
+Description=Reolink NVR Prometheus Exporter
+After=network.target
+
+[Service]
+Type=simple
+User=reolink_exporter
+Group=reolink_exporter
+ExecStart=/usr/bin/python3 /opt/reolink_exporter/reolink_exporter.py
+Restart=on-failure
+RestartSec=10
+
+Environment=NVR_HOST=192.168.0.4
+Environment=NVR_USER=admin
+Environment=NVR_PASSWORD={{ vault_reolink_nvr_password }}
+Environment=SCRAPE_PORT=9720
+Environment=POLL_INTERVAL=30
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

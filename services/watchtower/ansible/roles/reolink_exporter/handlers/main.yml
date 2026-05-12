@@ -1,0 +1,9 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart reolink_exporter
+  ansible.builtin.systemd:
+    name: reolink_exporter
+    state: restarted
