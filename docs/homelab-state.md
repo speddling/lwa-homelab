@@ -169,9 +169,14 @@ Always-on DNS resolver and full-stack monitoring node. Never runs workloads. See
 |          | 4TB HDD                       |
 |          | 2TB HDD                       |
 
-### Role
+## Role
 
-Primary k3s node. Runs all workloads. Named for its role as the single heavy node.
+Primary k3s worker node and household services platform. Hosts all Kubernetes workloads including Navidrome, Minecraft, and family fileshares. Named for its role as the single monolithic compute node — a deliberate single-node architecture expandable to a multi-node cluster if needed.
+
+**Pending**
+
+- [ ]  Client workspace — isolated environment on `/mnt/ssd-b` for Swiss lift-and-shift work
+- [ ]  MCP server space — local Model Context Protocol servers for AI tooling
 
 ### Services
 
@@ -215,8 +220,8 @@ Primary k3s node. Runs all workloads. Named for its role as the single heavy nod
 | Spec     | Detail                                                       |
 | -------- | ------------------------------------------------------------ |
 | Machine  | Dell Precision                                               |
-| Hostname |                                                              |
-| IP       | 192.168.0.                                                   |
+| Hostname | `studio`                                                     |
+| IP       | 192.168.0.109                                                |
 | Role     | Personal Laptop & DAW - Reaper with an M-Audio Air 192 \| 14 |
 
 
