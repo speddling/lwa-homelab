@@ -391,16 +391,37 @@ curl -X DELETE -u 'admin:PASSWORD' 'http://192.168.0.21:3001/api/v1/provisioning
 
 ### Git Workflow
 
+All changes go through a branch → PR → merge to master flow.
+Direct pushes to master are disabled via branch protection.
+
 ```bash
-# Standard commit and push (triggers GitHub Actions if paths match)
+# Start new work
 cd ~/homelab
+git checkout -b feature/description-of-change
+
+# Commit and push branch
 git add .
 git commit -m "feat: description of change"
-git push
+git push -u origin feature/description-of-change
 
-# Trigger workflow manually via GitHub CLI
+# Open PR via GitHub CLI
+gh pr create --title "feat: description" --body "What and why"
+
+# PR triggers validate job (Ansible syntax-check + Terraform validate)
+# Merge PR to master triggers deploy job
+
+# Trigger a workflow manually (bypasses branch requirement)
 gh workflow run deploy-watchtower.yml
 ```
+
+#### Branch naming conventions
+
+| Prefix | Use |
+|---|---|
+| `feature/*` | New capabilities or services |
+| `fix/*` | Bug fixes |
+| `docs/*` | Documentation only — does not trigger deploy |
+| `chore/*` | Maintenance, dependency updates |
 
 ### Homelab Text Dump
 
