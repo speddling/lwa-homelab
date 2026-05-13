@@ -39,5 +39,5 @@ spec:
             claimName: navidrome-db
         - name: music-storage
           hostPath:
-            path: /mnt/lab-backups/music-library  # → /mnt/hdd/music-library after 8TB swap
+            path: /mnt/hdd-c/music-library  # → /mnt/hdd/music-library after 8TB swap
             type: Directory
