@@ -424,3 +424,7 @@ find . -type f \( -name "*.yaml" -o -name "*.md" -o -name "*.yml" \) \
 | UPS — CyberPower CP1500PFCLCD | Low      | NUT role ready, waiting on hardware budget                 |
 | SNMP MIB generator            | Low      | Proper TP-Link MIB walk for richer metrics                 |
 | Omada DNS integration         | Low      | Point LAN clients at Watchtower via DHCP option            |
+
+---
+## Post-Watchtower Cleanup
+- Remove UFW from fileserver Ansible playbook — firewall policy will be managed at the network layer via ER605 / Watchtower
