@@ -1,0 +1,16 @@
+[Unit]
+Description=Alertmanager
+After=network.target
+
+[Service]
+User=alertmanager
+Group=alertmanager
+Type=simple
+ExecStart=/usr/local/bin/alertmanager \
+  --config.file=/etc/alertmanager/alertmanager.yml \
+  --storage.path=/var/lib/alertmanager \
+  --web.listen-address=0.0.0.0:9093
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

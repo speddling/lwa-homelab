@@ -72,6 +72,7 @@ Always-on DNS resolver and full-stack monitoring node. Never runs workloads. See
 
 | Service | Role | Port | Status |
 |---|---|---|---|
+| Alertmanager | Alert routing → Slack #sentinel | 9093 | 🟡 Pending deploy |
 | Unbound | Recursive DNS resolver (upstream) | 5335 | ✅ Running |
 | AdGuard Home | DNS frontend, ad/tracker filtering | 53, 3000 | ✅ Running |
 | Prometheus | Metrics scraping + TSDB | 9090 | ✅ Running |
@@ -426,8 +427,8 @@ find . -type f \( -name "*.yaml" -o -name "*.md" -o -name "*.yml" \) \
 
 | Item                          | Priority | Notes                                                      |
 | ----------------------------- | -------- | ---------------------------------------------------------- |
-| Monolith up/down Slack alert  | High     | No alert fires when monolith goes offline                  |
-| Daily summary Slack digest    | Medium   | Canary for alerting pipeline health                        |
+| Monolith up/down Slack alert  | High     | ✅ Built — deploy monitoring playbook to activate |
+| Daily summary Slack digest    | Medium   | ✅ Built — deploy monitoring playbook to activate |
 | Family file server            | Medium   | Structured backup for iPad art, crochet notes              |
 | JetStream PoE switch          | Low      | Replaces unmanaged TL-SG1210P, enables SNMP per-port stats |
 | UPS — CyberPower CP1500PFCLCD | Low      | NUT role ready, waiting on hardware budget                 |

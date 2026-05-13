@@ -1,0 +1,103 @@
+groups:
+  - name: homelab
+    interval: 1m
+    rules:
+
+      # ── Watchtower host ──────────────────────────────────────────────────────
+
+      - alert: WatchtowerHighCPU
+        expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle",instance="localhost:9100"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+          host: watchtower
+        annotations:
+          description: "Watchtower CPU usage is above 85% for 5 minutes (current: {{ "{{" }} $value | printf \"%.1f\" {{ "}}" }}%)"
+
+      - alert: WatchtowerHighMemory
+        expr: (1 - (node_memory_MemAvailable_bytes{instance="localhost:9100"} / node_memory_MemTotal_bytes{instance="localhost:9100"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          host: watchtower
+        annotations:
+          description: "Watchtower memory usage is above 85% for 5 minutes (current: {{ "{{" }} $value | printf \"%.1f\" {{ "}}" }}%)"
+
+      - alert: WatchtowerLowDisk
+        expr: (1 - (node_filesystem_avail_bytes{instance="localhost:9100",mountpoint="/"} / node_filesystem_size_bytes{instance="localhost:9100",mountpoint="/"})) * 100 > 80
+        for: 5m
+        labels:
+          severity: critical
+          host: watchtower
+        annotations:
+          description: "Watchtower disk usage is above 80% (current: {{ "{{" }} $value | printf \"%.1f\" {{ "}}" }}%)"
+
+      - alert: WatchtowerNodeExporterDown
+        expr: up{job="watchtower"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          host: watchtower
+        annotations:
+          description: "Watchtower node_exporter is down — host metrics unavailable"
+
+      - alert: AdGuardHomeDown
+        expr: up{job="adguard"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          host: watchtower
+        annotations:
+          description: "AdGuard Home is down — DNS filtering may be affected"
+
+      # ── Monolith host ────────────────────────────────────────────────────────
+
+      - alert: MonolithDown
+        expr: up{job="monolith"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          host: monolith
+        annotations:
+          description: "Monolith is unreachable — node_exporter scrape failed. k3s workloads may be affected."
+
+      - alert: MonolithHighCPU
+        expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle",instance="monolith.local:9100"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+          host: monolith
+        annotations:
+          description: "Monolith CPU usage is above 85% for 5 minutes (current: {{ "{{" }} $value | printf \"%.1f\" {{ "}}" }}%)"
+
+      - alert: MonolithHighMemory
+        expr: (1 - (node_memory_MemAvailable_bytes{instance="monolith.local:9100"} / node_memory_MemTotal_bytes{instance="monolith.local:9100"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          host: monolith
+        annotations:
+          description: "Monolith memory usage is above 85% for 5 minutes (current: {{ "{{" }} $value | printf \"%.1f\" {{ "}}" }}%)"
+
+      - alert: MonolithLowDisk
+        expr: (1 - (node_filesystem_avail_bytes{instance="monolith.local:9100",mountpoint="/"} / node_filesystem_size_bytes{instance="monolith.local:9100",mountpoint="/"})) * 100 > 80
+        for: 5m
+        labels:
+          severity: critical
+          host: monolith
+        annotations:
+          description: "Monolith disk usage on / is above 80% (current: {{ "{{" }} $value | printf \"%.1f\" {{ "}}" }}%)"
+
+      # ── Daily summary (dead man's switch) ───────────────────────────────────
+
+      - alert: DailySummary
+        expr: vector(1)
+        for: 0m
+        labels:
+          severity: info
+        annotations:
+          description: |
+            🏠 Little Wolf Acres — Daily Summary
+            Watchtower: {{ "{{" }} if (query "up{job='watchtower'}" | first | value) == 1 {{ "}}" }}✅ Up{{ "{{" }} else {{ "}}" }}🔴 Down{{ "{{" }} end {{ "}}" }}
+            Monolith: {{ "{{" }} if (query "up{job='monolith'}" | first | value) == 1 {{ "}}" }}✅ Up{{ "{{" }} else {{ "}}" }}🔴 Down{{ "{{" }} end {{ "}}" }}
+            AdGuard: {{ "{{" }} if (query "up{job='adguard'}" | first | value) == 1 {{ "}}" }}✅ Up{{ "{{" }} else {{ "}}" }}🔴 Down{{ "{{" }} end {{ "}}" }}
