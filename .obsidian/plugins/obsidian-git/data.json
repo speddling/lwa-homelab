@@ -35,7 +35,6 @@
   "authorInHistoryView": "hide",
   "dateInHistoryView": false,
   "diffStyle": "split",
-  "branchName": "docs/obsidian-sync",
   "hunks": {
     "showSigns": false,
     "hunkCommands": false,
@@ -65,5 +64,6 @@
     "gutterSpacingFallbackLength": 5,
     "lastShownAuthorDisplay": "initials",
     "lastShownDateTimeFormatOptions": "date"
-  }
+  },
+  "branchName": "docs/obsidian-sync"
 }
