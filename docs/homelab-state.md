@@ -1,5 +1,5 @@
 # Little Wolf Acres — Homelab Current State
-> Last updated: May 2026 · Authored on apex · All IaC in `speddling/homelab` repo
+> Last updated: 2026-05-14 · Authored on apex · All IaC in `speddling/homelab` repo
 
 ---
 
@@ -159,15 +159,17 @@ Always-on DNS resolver and full-stack monitoring node. Never runs workloads. See
 
 | Spec     | Detail                        |
 | -------- | ----------------------------- |
-| Machine  | AMD Tower                     |
+| Machine  | AMD Tower (Fractal Design Define R4) |
+| CPU      | AMD Ryzen 7 5700G             |
+| RAM      | 32GB DDR4-3200 (2×16GB Corsair Vengeance LPX) |
 | OS       | Ubuntu Server 24.04 LTS       |
 | Hostname | `monolith`                    |
 | IP       | 192.168.0.20 (DHCP MAC-bound) |
-| Storage  | Boot 512GB NVMe               |
-|          | 256GB SSD                     |
-|          | 512GB SSD                     |
-|          | 4TB HDD                       |
-|          | 2TB HDD                       |
+| Storage  | 512GB NVMe — `/` (150G LVM, unallocated headroom) |
+|          | 512GB SSD — `/mnt/ssd-a`      |
+|          | 256GB SSD — `/mnt/ssd-b`      |
+|          | 4TB HDD — `/mnt/hdd-c`        |
+|          | 2TB HDD — `/mnt/hdd-d`        |
 
 ## Role
 
@@ -209,7 +211,7 @@ Primary k3s worker node and household services platform. Hosts all Kubernetes wo
 
 | Spec     | Detail                                                                 |
 | -------- | ---------------------------------------------------------------------- |
-| Machine  | MacBook Air M4                                                         |
+| Machine  | MacBook Air M4 (2025) 16GB                                             |
 | Hostname | `apex`                                                                 |
 | IP       | 192.168.0.19 (DHCP MAC-bound)                                          |
 | Role     | Primary workstation — all authoring, config, remote ops originate here |
@@ -424,6 +426,8 @@ find . -type f \( -name "*.yaml" -o -name "*.md" -o -name "*.yml" \) \
 
 | Item                          | Priority | Notes                                                      |
 | ----------------------------- | -------- | ---------------------------------------------------------- |
+| Monolith up/down Slack alert  | High     | No alert fires when monolith goes offline                  |
+| Daily summary Slack digest    | Medium   | Canary for alerting pipeline health                        |
 | Family file server            | Medium   | Structured backup for iPad art, crochet notes              |
 | JetStream PoE switch          | Low      | Replaces unmanaged TL-SG1210P, enables SNMP per-port stats |
 | UPS — CyberPower CP1500PFCLCD | Low      | NUT role ready, waiting on hardware budget                 |
