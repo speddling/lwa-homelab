@@ -95,7 +95,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "synapse": {
-      "url": "http://monolith.littlewolfacres.com:30800/sse"
+      "command": "/Users/speddling/.nvm/versions/node/v24.15.0/bin/npx",
+      "args": ["mcp-remote", "http://monolith.littlewolfacres.com:30800/sse", "--allow-http"]
     }
   }
 }
