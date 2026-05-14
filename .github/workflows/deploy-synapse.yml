@@ -1,11 +1,17 @@
 name: Deploy Synapse
 
 on:
+  push:
+    branches: [master]
+    paths:
+      - services/synapse/**
+      - .github/workflows/deploy-synapse.yml
   workflow_dispatch:
 
 jobs:
-  deploy:
-    runs-on: [self-hosted, monolith]
+  build:
+    name: Build and push image
+    runs-on: ubuntu-latest
 
     permissions:
       contents: read
@@ -30,6 +36,18 @@ jobs:
           tags: |
             ghcr.io/speddling/synapse:${{ github.sha }}
             ghcr.io/speddling/synapse:latest
+
+  deploy:
+    name: Deploy to Monolith
+    runs-on: [self-hosted, monolith]
+    needs: build
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Create ghcr pull secret in synapse namespace
         run: |
