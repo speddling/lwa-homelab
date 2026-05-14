@@ -41,7 +41,7 @@ k8s_config.load_incluster_config()
 core_v1 = k8s_client.CoreV1Api()
 apps_v1 = k8s_client.AppsV1Api()
 
-mcp = FastMCP("synapse")
+mcp = FastMCP("synapse", host="0.0.0.0", port=8080)
 
 
 # ---------------------------------------------------------------------------
@@ -222,4 +222,4 @@ def fs_list_dir(path: str) -> str:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http", host="0.0.0.0", port=8080, path="/mcp")
+    mcp.run(transport="streamable-http")
