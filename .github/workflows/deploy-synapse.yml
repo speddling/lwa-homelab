@@ -1,6 +1,11 @@
 name: Deploy Synapse
 
 on:
+  push:
+    branches: [master]
+    paths:
+      - services/synapse/**
+      - .github/workflows/deploy-synapse.yml
   workflow_dispatch:
 
 jobs:
