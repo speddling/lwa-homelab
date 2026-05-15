@@ -8,7 +8,11 @@ scribe_port: 8765
 # operate on. The default is the homelab repo only.
 scribe_repo_roots: "/Users/speddling/homelab"
 
-# Python venv location (resolved relative to the running user's home)
+# Python interpreter — use MacPorts 3.12 (stable). 3.14 is pre-release and
+# causes pip platform-tag issues with packages that require Python >=3.10.
+scribe_python: "/opt/local/bin/python3.12"
+
+# Python venv location
 scribe_venv: "{{ ansible_env.HOME }}/.venv/scribe"
 
 # launchd log file (stdout + stderr)
