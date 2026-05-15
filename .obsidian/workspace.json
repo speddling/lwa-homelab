@@ -184,20 +184,22 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "165dadc935b0cab3",
+  "active": "bffb361906a7587a",
   "lastOpenFiles": [
-    "services/fileserver/ansible/group_vars/all/vault.yml",
+    "services/monolith/ansible/playbooks/mirror.yml",
+    "services/monolith/ansible/roles/mirror-hdd/README.md",
+    "services/monolith/ansible/roles/mirror-hdd/templates/mirror-hdd.timer.j2",
+    "services/monolith/ansible/roles/mirror-hdd/templates/mirror-hdd.service.j2",
+    "services/monolith/ansible/roles/mirror-hdd/templates/mirror-hdd.sh.j2",
+    "services/monolith/ansible/roles/mirror-hdd/tasks/main.yml",
+    "services/monolith/ansible/roles/mirror-hdd/handlers/main.yml",
+    "services/monolith/ansible/roles/mirror-hdd/defaults/main.yml",
+    "services/monolith/ansible/roles/mirror-hdd/templates",
+    "services/monolith/ansible/roles/mirror-hdd/tasks",
+    "services/monolith/ansible/roles/mirror-hdd/handlers",
+    "services/monolith/ansible/roles/mirror-hdd/defaults",
+    "docs/scribe.md",
     "docs/synapse.md",
-    "services/synapse/kubernetes/service.yaml",
-    "services/synapse/kubernetes/deployment.yaml",
-    "services/synapse/kubernetes/configmap.yaml",
-    "services/synapse/kubernetes/rbac.yaml",
-    "services/synapse/kubernetes/namespace.yaml",
-    "services/synapse/server/Dockerfile",
-    "services/synapse/server/requirements.txt",
-    "services/synapse/server/server.py",
-    "services/synapse/server",
-    "services/synapse/kubernetes",
     "docs/runbook.md",
     "docs/network.md",
     "docs/storage.md",
@@ -219,8 +221,6 @@
     "services/watchtower/ansible/node_modules/@google/genai/README.md",
     "services/watchtower/ansible/node_modules/openai/src/resources/webhooks/api.md",
     "services/watchtower/ansible/node_modules/openai/src/resources/responses/api.md",
-    "services/watchtower/ansible/node_modules/openai/src/resources/realtime/api.md",
-    "services/watchtower/ansible/node_modules/openai/src/resources/conversations/api.md",
-    "services/watchtower/ansible/node_modules/openai/src/internal/qs/README.md"
+    "services/watchtower/ansible/node_modules/openai/src/resources/realtime/api.md"
   ]
 }
