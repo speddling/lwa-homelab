@@ -8,13 +8,6 @@ route:
   group_interval: {{ alertmanager_group_interval }}
   repeat_interval: {{ alertmanager_repeat_interval }}
   receiver: sentinel
-  routes:
-    - matchers:
-        - alertname = DailySummary
-      receiver: sentinel
-      group_wait: 0s
-      group_interval: {{ alertmanager_daily_repeat_interval }}
-      repeat_interval: {{ alertmanager_daily_repeat_interval }}
 
 receivers:
   - name: sentinel

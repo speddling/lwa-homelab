@@ -106,12 +106,3 @@ groups:
         annotations:
           description: "Monolith disk usage on /mnt/hdd-d (mirror) is above 80% (current: {{ "{{" }} $value | printf \"%.1f\" {{ "}}" }}%)"
 
-      # ── Daily summary (dead man's switch) ───────────────────────────────────
-
-      - alert: DailySummary
-        expr: vector(1)
-        for: 0m
-        labels:
-          severity: info
-        annotations:
-          description: "🏠 Little Wolf Acres — Daily Summary. Check Grafana for full status: http://grafana.littlewolfacres.com:3001"

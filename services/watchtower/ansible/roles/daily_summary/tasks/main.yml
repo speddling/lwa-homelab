@@ -1,0 +1,34 @@
+---
+- name: Deploy daily summary script
+  template:
+    src: daily-summary.py.j2
+    dest: /usr/local/bin/daily-summary.py
+    owner: root
+    group: root
+    mode: '0755'
+  notify: restart daily-summary timer
+
+- name: Deploy daily-summary systemd service
+  template:
+    src: daily-summary.service.j2
+    dest: /etc/systemd/system/daily-summary.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart daily-summary timer
+
+- name: Deploy daily-summary systemd timer
+  template:
+    src: daily-summary.timer.j2
+    dest: /etc/systemd/system/daily-summary.timer
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart daily-summary timer
+
+- name: Enable and start daily-summary timer
+  systemd:
+    name: daily-summary.timer
+    enabled: yes
+    state: started
+    daemon_reload: yes

@@ -1,0 +1,11 @@
+[Unit]
+Description=Little Wolf Acres — Daily Summary timer (8 AM and 8 PM)
+Requires=daily-summary.service
+
+[Timer]
+OnCalendar=*-*-* 08:00:00 {{ daily_summary_timezone }}
+OnCalendar=*-*-* 20:00:00 {{ daily_summary_timezone }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

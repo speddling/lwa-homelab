@@ -101,8 +101,12 @@ alertmanager_resolve_timeout:        "5m"
 alertmanager_group_wait:             "30s"
 alertmanager_group_interval:         "5m"
 alertmanager_repeat_interval:        "4h"
-alertmanager_daily_repeat_interval:  "24h"
 # Webhook URL: vault_slack_webhook_url (see vault.yml)
+
+# -----------------------------------------------------------------------------
+# Watchtower — Daily Summary
+# -----------------------------------------------------------------------------
+daily_summary_timezone:              "America/New_York"
 
 # -----------------------------------------------------------------------------
 # Watchtower — SNMP
