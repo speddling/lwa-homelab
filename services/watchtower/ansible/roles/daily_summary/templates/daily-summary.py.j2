@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+"""
+Little Wolf Acres — Daily Summary
+Queries Prometheus and posts a twice-daily health digest to Slack.
+Runs at 8 AM and 8 PM America/New_York via systemd timer.
+
+Enhancement roadmap: docs/daily-summary.md
+"""
+
+# ---------------------------------------------------------------------------
+# Config — rendered by Ansible at deploy time
+# ---------------------------------------------------------------------------
+PROMETHEUS_URL = "http://localhost:{{ port_prometheus }}/api/v1"
+SLACK_URL      = "{{ vault_slack_webhook_url }}"
+GRAFANA_URL    = "http://{{ fqdn_grafana }}:{{ port_grafana }}"
+MONOLITH       = "{{ fqdn_monolith }}:{{ port_node_exporter }}"
+
+{% raw %}
+# ---------------------------------------------------------------------------
+# Imports
+# ---------------------------------------------------------------------------
+import json
+import sys
+import urllib.request
+import urllib.parse
+from datetime import datetime
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+def query(promql):
+    """Instant Prometheus query -> float, or None on any failure."""
+    url = f"{PROMETHEUS_URL}/query?query={urllib.parse.quote(promql)}"
+    try:
+        with urllib.request.urlopen(url, timeout=5) as r:
+            data = json.loads(r.read())
+        result = data.get("data", {}).get("result", [])
+        return float(result[0]["value"][1]) if result else None
+    except Exception as e:
+        print(f"[warn] query failed ({promql[:60]}...): {e}", file=sys.stderr)
+        return None
+
+
+def pct(val, decimals=0):
+    return f"{val:.{decimals}f}%" if val is not None else "N/A"
+
+
+def health(val, warn=70, crit=85):
+    """Traffic-light icon based on percentage thresholds."""
+    if val is None:
+        return "❓"
+    if val >= crit:
+        return "🔴"
+    if val >= warn:
+        return "🟡"
+    return "🟢"
+
+
+def up_icon(val):
+    return "🟢" if val == 1.0 else "🔴"
+
+
+# ---------------------------------------------------------------------------
+# Gather metrics
+# ---------------------------------------------------------------------------
+now    = datetime.now()
+period = "Morning" if now.hour < 12 else "Evening"
+
+# Service availability
+wt_up      = query('up{job="watchtower"}')
+mn_up      = query('up{job="monolith"}')
+adguard_up = query('up{job="adguard"}')
+
+# Watchtower — CPU 12 h average, current memory & disk
+wt_cpu  = query('100 - (avg(avg_over_time(rate(node_cpu_seconds_total{mode="idle",instance="localhost:9100"}[5m])[12h:5m])) * 100)')
+wt_mem  = query('(1 - (node_memory_MemAvailable_bytes{instance="localhost:9100"} / node_memory_MemTotal_bytes{instance="localhost:9100"})) * 100')
+wt_disk = query('(1 - (node_filesystem_avail_bytes{instance="localhost:9100",mountpoint="/"} / node_filesystem_size_bytes{instance="localhost:9100",mountpoint="/"})) * 100')
+
+# Monolith — CPU 12 h average, current memory, root/hdd-c/hdd-d disks
+mn_cpu    = query(f'100 - (avg(avg_over_time(rate(node_cpu_seconds_total{{mode="idle",instance="{MONOLITH}"}}[5m])[12h:5m])) * 100)')
+mn_mem    = query(f'(1 - (node_memory_MemAvailable_bytes{{instance="{MONOLITH}"}} / node_memory_MemTotal_bytes{{instance="{MONOLITH}"}})) * 100')
+mn_disk   = query(f'(1 - (node_filesystem_avail_bytes{{instance="{MONOLITH}",mountpoint="/"}} / node_filesystem_size_bytes{{instance="{MONOLITH}",mountpoint="/"}}) ) * 100')
+mn_disk_c = query(f'(1 - (node_filesystem_avail_bytes{{instance="{MONOLITH}",mountpoint="/mnt/hdd-c"}} / node_filesystem_size_bytes{{instance="{MONOLITH}",mountpoint="/mnt/hdd-c"}})) * 100')
+mn_disk_d = query(f'(1 - (node_filesystem_avail_bytes{{instance="{MONOLITH}",mountpoint="/mnt/hdd-d"}} / node_filesystem_size_bytes{{instance="{MONOLITH}",mountpoint="/mnt/hdd-d"}})) * 100')
+
+# ---------------------------------------------------------------------------
+# TODO: DNS stats (AdGuard exporter — see docs/daily-summary.md §Roadmap)
+# dns_queries_total = query('adguard_num_dns_queries_total')
+# dns_blocked_pct   = query('adguard_num_blocked_filtering_total / adguard_num_dns_queries_total * 100')
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# TODO: WAN / T-Mobile stats (see docs/daily-summary.md §Roadmap)
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# TODO: Active alerts since last report (see docs/daily-summary.md §Roadmap)
+# alerts_firing = query('count(ALERTS{alertstate="firing",severity!="info"})')
+# ---------------------------------------------------------------------------
+
+# Overall health verdict
+all_critical = [wt_up, mn_up, adguard_up]
+overall = (
+    "✅ All systems nominal"
+    if all(v == 1.0 for v in all_critical if v is not None)
+    else "⚠️ One or more systems need attention"
+)
+
+# ---------------------------------------------------------------------------
+# Build Slack message
+# ---------------------------------------------------------------------------
+lines = [
+    f"*🏠 Little Wolf Acres — {period} Summary*",
+    f"_{now.strftime('%A, %B %-d at %-I:%M %p')}_",
+    "",
+    f"*Status:* {overall}",
+    "",
+    f"*💻 Monolith* {up_icon(mn_up)}",
+    f"  CPU (12 h avg): {health(mn_cpu)} {pct(mn_cpu)}   Memory: {health(mn_mem)} {pct(mn_mem)}",
+    f"  Disk  /: {health(mn_disk)} {pct(mn_disk)}   Music library: {health(mn_disk_c)} {pct(mn_disk_c)}   Mirror: {health(mn_disk_d)} {pct(mn_disk_d)}",
+    "",
+    f"*🖥️  Watchtower* {up_icon(wt_up)}",
+    f"  CPU (12 h avg): {health(wt_cpu)} {pct(wt_cpu)}   Memory: {health(wt_mem)} {pct(wt_mem)}   Disk: {health(wt_disk)} {pct(wt_disk)}",
+    "",
+    f"*🛡️  DNS (AdGuard)* {up_icon(adguard_up)}",
+    "  _Query & block-rate stats — roadmap item, see docs/daily-summary.md_",
+    "",
+    f"_Full dashboard: {GRAFANA_URL}_",
+]
+
+text = "\n".join(lines)
+
+# ---------------------------------------------------------------------------
+# Post to Slack
+# ---------------------------------------------------------------------------
+payload = json.dumps({"text": text}).encode()
+req = urllib.request.Request(
+    SLACK_URL,
+    data=payload,
+    headers={"Content-Type": "application/json"},
+    method="POST",
+)
+try:
+    with urllib.request.urlopen(req, timeout=10) as r:
+        if r.status != 200:
+            print(f"Slack returned HTTP {r.status}", file=sys.stderr)
+            sys.exit(1)
+except Exception as e:
+    print(f"Slack post failed: {e}", file=sys.stderr)
+    sys.exit(1)
+{% endraw %}

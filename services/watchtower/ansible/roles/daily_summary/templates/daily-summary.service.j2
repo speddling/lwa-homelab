@@ -1,0 +1,11 @@
+[Unit]
+Description=Little Wolf Acres — Daily Summary
+After=network-online.target prometheus.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/daily-summary.py
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=daily-summary
