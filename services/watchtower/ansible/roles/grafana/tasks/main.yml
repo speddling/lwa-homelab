@@ -51,6 +51,10 @@
     group: grafana
     mode: '0755'
 
+  # ── Community dashboards — downloaded once, patched for our datasource UID ──
+  # Node Exporter Full uses ${DS_PROMETHEUS} as a datasource placeholder.
+  # We patch it to our provisioned UID after download.
+
 - name: Download Node Exporter Full dashboard (ID 1860)
   ansible.builtin.get_url:
     url: https://grafana.com/api/dashboards/1860/revisions/latest/download
@@ -67,36 +71,27 @@
     replace: 'PBFA97CFB590B2093'
   notify: restart grafana
 
-- name: Download k3s cluster dashboard (ID 15661)
-  ansible.builtin.get_url:
-    url: https://grafana.com/api/dashboards/15661/revisions/latest/download
+  # ── Custom dashboards — built for this homelab's exact metrics ────────────
+  # These replace community dashboards (k3s ID 15661, Blackbox ID 7587) that
+  # had unresolvable ${DS_PROMETHEUS} datasource variables when provisioned
+  # from disk, causing all panels to show no data.
+
+- name: Deploy k3s cluster dashboard (custom)
+  ansible.builtin.copy:
+    src: k3s-cluster.json
     dest: /var/lib/grafana/dashboards/k3s-cluster.json
     owner: grafana
     group: grafana
     mode: '0644'
   notify: restart grafana
 
-- name: Patch k3s cluster datasource variable
-  ansible.builtin.replace:
-    path: /var/lib/grafana/dashboards/k3s-cluster.json
-    regexp: '\$\{DS_PROMETHEUS[^}]*\}'
-    replace: 'PBFA97CFB590B2093'
-  notify: restart grafana
-
-- name: Download Blackbox Exporter dashboard (ID 7587)
-  ansible.builtin.get_url:
-    url: https://grafana.com/api/dashboards/7587/revisions/latest/download
+- name: Deploy Blackbox probes dashboard (custom)
+  ansible.builtin.copy:
+    src: blackbox-probes.json
     dest: /var/lib/grafana/dashboards/blackbox-exporter.json
     owner: grafana
     group: grafana
     mode: '0644'
-  notify: restart grafana
-
-- name: Patch Blackbox Exporter datasource variable
-  ansible.builtin.replace:
-    path: /var/lib/grafana/dashboards/blackbox-exporter.json
-    regexp: '\$\{DS_PROMETHEUS[^}]*\}'
-    replace: 'PBFA97CFB590B2093'
   notify: restart grafana
 
 - name: Deploy SNMP interfaces dashboard (custom)
