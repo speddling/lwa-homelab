@@ -36,14 +36,12 @@
   command:
     cmd: python3 -m venv {{ argus_venv }}
     creates: "{{ argus_venv }}/bin/python"
-  become_user: "{{ argus_user }}"
 
 - name: Install argus Python dependencies
   pip:
     requirements: "{{ argus_dest_dir }}/requirements.txt"
     virtualenv: "{{ argus_venv }}"
     state: present
-  become_user: "{{ argus_user }}"
   notify: restart argus
 
 - name: Deploy argus systemd service
