@@ -51,6 +51,28 @@
     group: grafana
     mode: '0755'
 
+- name: Find all dashboard files currently on disk
+  ansible.builtin.find:
+    paths: /var/lib/grafana/dashboards
+    patterns: '*.json'
+  register: existing_dashboards
+
+- name: Remove any dashboard files not in our managed list
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ existing_dashboards.files }}"
+  when: item.path | basename not in managed_dashboards
+  vars:
+    managed_dashboards:
+      - node-exporter-full.json
+      - k3s-cluster.json
+      - blackbox-exporter.json
+      - snmp-interfaces.json
+      - tmobile-gateway.json
+      - reolink-nvr.json
+  notify: restart grafana
+
 - name: Download Node Exporter Full dashboard (ID 1860)
   ansible.builtin.get_url:
     url: https://grafana.com/api/dashboards/1860/revisions/latest/download
