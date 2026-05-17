@@ -103,6 +103,7 @@ Always-on DNS resolver and full-stack monitoring node. Never runs workloads. See
 | Job | Target | Status |
 |---|---|---|
 | watchtower | localhost:9100 | ✅ Up |
+| prometheus | localhost:9090 | ✅ Up |
 | blackbox | localhost:9115 | ✅ Up |
 | adguard | localhost:9618 | ✅ Up |
 | monolith | monolith:9100 | ✅ Up |

@@ -34,6 +34,7 @@ Monolith (192.168.0.20 / monolith.littlewolfacres.com)
 | Job | Target | Metrics |
 |-----|--------|---------|
 | `watchtower` | `localhost:9100` → relabeled `instance=watchtower` | Host CPU, memory, disk, network |
+| `prometheus` | `localhost:9090` → relabeled `instance=watchtower` | Prometheus TSDB, WAL, scrape, rule stats |
 | `blackbox` | `localhost:9115` | Exporter health only — not probe results |
 | `blackbox-http` | Probes via `localhost:9115` | `probe_success`, `probe_duration_seconds` for HTTP targets |
 | `blackbox-icmp` | Probes via `localhost:9115` | `probe_success`, `probe_duration_seconds` for ICMP targets |
@@ -133,6 +134,7 @@ services/watchtower/ansible/roles/grafana/templates/alert_rules.yml.j2
 | `WatchtowerHighCPU` | CPU > 85% for 5 min | warning | watchtower |
 | `WatchtowerHighMemory` | Memory > 85% for 5 min | warning | watchtower |
 | `WatchtowerLowDisk` | Disk `/` > 80% | critical | watchtower |
+| `WatchtowerPrometheusTSDB` | TSDB blocks > 8GB (80% of 10GB retention limit) | warning | watchtower |
 | `WatchtowerNodeExporterDown` | `up{job="watchtower"} == 0` for 1 min | critical | watchtower |
 | `AdGuardHomeDown` | `up{job="adguard"} == 0` for 1 min | critical | watchtower |
 | `MonolithDown` | `up{job="monolith"} == 0` for 1 min | critical | monolith |
