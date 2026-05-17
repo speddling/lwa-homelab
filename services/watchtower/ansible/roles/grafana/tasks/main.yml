@@ -158,22 +158,23 @@
     enabled: yes
     state: started
 
-# Flush handlers here so Grafana restarts with all provisioning changes
-# applied before we stop it for SQLite maintenance below.
+# Flush pending handlers so Grafana restarts with all provisioning changes
+# applied before we stop it for SQLite maintenance.
 - name: Flush handlers to apply any pending Grafana restart
   ansible.builtin.meta: flush_handlers
 
-# ── SQLite maintenance: strip broken provisioning markers ─────────────────
-# Dashboards imported via the UI into the Homelab folder while the file
-# provisioner is active get flagged as provisioned in Grafana's SQLite DB
-# even though no file owns them. This breaks the GET API with HTTP 500
-# ("Error while checking if dashboard is provisioned"), which blocks every
-# subsequent API approach (re-save, delete).
+# ── SQLite maintenance: delete unmanaged dashboards from the DB ───────────
+# Removing only dashboard_provisioning rows in the previous attempt was not
+# enough — Grafana re-inserts them on startup, which means the orphan JSON
+# files are still being found by the provisioner somewhere on disk.
 #
-# Fix: stop Grafana, delete dashboard_provisioning rows for any UID outside
-# the managed set, then restart. Managed dashboards are re-provisioned from
-# their files on startup. Unmanaged dashboards become plain API-owned
-# dashboards (no provisioning record) and the DELETE endpoint works normally.
+# Deleting the dashboard rows themselves is definitive: the provisioner has
+# nothing to re-attach to. Managed dashboards are re-created from their
+# files on the next startup; orphans don't come back.
+#
+# Order matters: clear dashboard_provisioning first (FK side), then delete
+# the dashboard rows. SQLite FK enforcement is off by default so this won't
+# cascade automatically — we handle both tables explicitly.
 
 - name: Ensure sqlite3 CLI is installed
   ansible.builtin.apt:
@@ -194,24 +195,21 @@
     name: grafana-server
     state: stopped
 
-- name: Remove provisioning markers from unmanaged dashboards in Grafana DB
-  ansible.builtin.command:
-    argv:
-      - sqlite3
-      - /var/lib/grafana/grafana.db
-      - >-
-        DELETE FROM dashboard_provisioning
-        WHERE dashboard_id IN (
-          SELECT id FROM dashboard
-          WHERE uid NOT IN (
-            'lwa-blackbox-probes',
-            'lwa-k3s-cluster',
-            'lwa-reolink-nvr',
-            'lwa-snmp-interfaces',
-            'lwa-tmobile-gateway',
-            '{{ nef_uid }}'
-          )
-        );
+- name: Clear dashboard_provisioning rows for unmanaged dashboards
+  ansible.builtin.shell: >-
+    sqlite3 /var/lib/grafana/grafana.db
+    "DELETE FROM dashboard_provisioning WHERE dashboard_id IN
+    (SELECT id FROM dashboard WHERE is_folder=0 AND uid NOT IN
+    ('lwa-blackbox-probes','lwa-k3s-cluster','lwa-reolink-nvr',
+    'lwa-snmp-interfaces','lwa-tmobile-gateway','{{ nef_uid }}'));"
+  changed_when: true
+
+- name: Delete unmanaged dashboard rows from Grafana DB
+  ansible.builtin.shell: >-
+    sqlite3 /var/lib/grafana/grafana.db
+    "DELETE FROM dashboard WHERE is_folder=0 AND uid NOT IN
+    ('lwa-blackbox-probes','lwa-k3s-cluster','lwa-reolink-nvr',
+    'lwa-snmp-interfaces','lwa-tmobile-gateway','{{ nef_uid }}');"
   changed_when: true
 
 - name: Start Grafana after SQLite maintenance
@@ -219,7 +217,10 @@
     name: grafana-server
     state: started
 
-# ── API purge: delete any remaining unmanaged dashboards ─────────────────
+# ── API purge: safety net for any non-provisioned orphans ─────────────────
+# Dashboards deleted from the SQLite DB above won't appear here. This step
+# catches any remaining unmanaged dashboards that survived without a
+# provisioning marker (plain UI imports that don't hit the 400/500 error).
 
 - name: Wait for Grafana to be ready
   ansible.builtin.uri:
