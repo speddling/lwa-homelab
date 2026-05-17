@@ -25,6 +25,13 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:{{ port_blackbox_exporter }}']
 
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:{{ port_prometheus }}']
+    relabel_configs:
+      - target_label: instance
+        replacement: watchtower
+
   - job_name: 'adguard'
     static_configs:
       - targets: ['localhost:{{ port_adguard_exporter }}']

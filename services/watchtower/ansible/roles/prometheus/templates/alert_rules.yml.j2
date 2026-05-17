@@ -32,6 +32,15 @@ groups:
         annotations:
           description: "Watchtower disk usage is above 80% (current: {{ "{{" }} $value | printf \"%.1f\" {{ "}}" }}%)"
 
+      - alert: WatchtowerPrometheusTSDB
+        expr: prometheus_tsdb_storage_blocks_bytes{job="prometheus",instance="watchtower"} > 8e9
+        for: 15m
+        labels:
+          severity: warning
+          host: watchtower
+        annotations:
+          description: "Prometheus TSDB block storage is above 8GB (current: {{ "{{" }} $value | humanize {{ "}}" }}B) — approaching 10GB retention limit. Expect compaction to temporarily spike disk, CPU, and memory."
+
       - alert: WatchtowerNodeExporterDown
         expr: up{job="watchtower"} == 0
         for: 1m
