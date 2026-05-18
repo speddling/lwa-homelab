@@ -43,6 +43,23 @@
     mode: '0640'
   notify: restart grafana
 
+# Remove any stale provisioner YAML configs that we don't own.
+# A leftover config pointing to a different directory would re-provision
+# orphan dashboards on every Grafana restart, making them undeletable via API.
+- name: Find all dashboard provisioner configs
+  ansible.builtin.find:
+    paths: /etc/grafana/provisioning/dashboards
+    patterns: '*.yml,*.yaml'
+  register: provisioner_configs
+
+- name: Remove any dashboard provisioner configs that are not homelab.yml
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ provisioner_configs.files }}"
+  when: item.path | basename != 'homelab.yml'
+  notify: restart grafana
+
 - name: Create dashboard directory
   file:
     path: /var/lib/grafana/dashboards
@@ -158,18 +175,20 @@
     enabled: yes
     state: started
 
-# Flush pending handlers so Grafana has the latest provisioning before
-# we stop it for SQLite maintenance.
 - name: Flush handlers to apply any pending Grafana restart
   ansible.builtin.meta: flush_handlers
 
-# ── SQLite maintenance ────────────────────────────────────────────────────
-# Previous attempts with sqlite3 CLI deleted 0 rows — either the schema
-# differs from what we expected, or Grafana is re-inserting from files.
-# Using Python to get full visibility: lists every provisioning file and
-# its UID, deletes any file with an orphan UID, prints the full dashboard
-# table, then deletes unmanaged rows. Output is visible in the deploy log
-# so we can see exactly what's happening.
+# ── DB maintenance ────────────────────────────────────────────────────────
+# The dashboard table is empty — this Grafana version uses unified storage
+# (resource table) not the legacy dashboard table. We need to:
+#   1. Find the right table/file containing the orphan dashboards
+#   2. Remove orphan provisioner files from any extra provisioning dirs
+#   3. Let Grafana's own provisioner cleanup handle deletion on restart
+#      (disableDeletion: false means it removes provisioned dashboards
+#       whose files are gone when it rescans)
+#
+# This script dumps full diagnostics so we can see exactly what's in the
+# DB and which tables/files contain the orphan UIDs.
 
 - name: Read node-exporter-full UID from disk
   ansible.builtin.slurp:
@@ -180,12 +199,12 @@
   ansible.builtin.set_fact:
     nef_uid: "{{ (nef_raw.content | b64decode | from_json).uid }}"
 
-- name: Stop Grafana for SQLite maintenance
+- name: Stop Grafana for DB maintenance
   systemd:
     name: grafana-server
     state: stopped
 
-- name: Purge unmanaged dashboards — inspect files and DB, delete orphans
+- name: Inspect all SQLite files and purge unmanaged dashboard records
   ansible.builtin.shell:
     executable: /bin/bash
     cmd: |
@@ -197,67 +216,102 @@
           'lwa-snmp-interfaces', 'lwa-tmobile-gateway',
           '{{ nef_uid }}'
       }
+      ORPHAN_UIDS = {'c179cb7c-3f18-443b-94ea-575d15d2cee8', 'xtkCtBkiz'}
 
-      print("=== Provisioning directory files ===")
-      for f in sorted(glob.glob('/var/lib/grafana/dashboards/*.json')):
+      # ── 1. List all SQLite files ──────────────────────────────────────
+      print("=== SQLite files in /var/lib/grafana/ ===")
+      db_files = glob.glob('/var/lib/grafana/*.db')
+      for f in sorted(db_files):
+          size = os.path.getsize(f)
+          print(f"  {f}  ({size:,} bytes)")
+
+      # ── 2. Inspect every DB file ──────────────────────────────────────
+      for db_path in sorted(db_files):
+          print(f"\n=== Tables in {db_path} ===")
+          conn = sqlite3.connect(db_path)
+          c = conn.cursor()
+          c.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+          tables = [row[0] for row in c.fetchall()]
+          print(f"  {tables}")
+
+          # legacy storage
+          if 'dashboard' in tables:
+              c.execute("SELECT COUNT(*) FROM dashboard")
+              count = c.fetchone()[0]
+              print(f"  dashboard table: {count} rows")
+              if count > 0:
+                  c.execute("SELECT id, uid, title FROM dashboard ORDER BY title")
+                  for id_, uid, title in c.fetchall():
+                      tag = 'MANAGED' if uid in MANAGED_UIDS else 'ORPHAN'
+                      print(f"    [{tag}] uid={uid!r}  title={title!r}")
+                      if tag == 'ORPHAN':
+                          c.execute("DELETE FROM dashboard_provisioning WHERE dashboard_id=?", (id_,))
+                          c.execute("DELETE FROM dashboard WHERE id=?", (id_,))
+                          print(f"      -> DELETED")
+                  conn.commit()
+
+          # unified storage (Grafana 11+)
+          if 'resource' in tables:
+              c.execute("SELECT COUNT(*) FROM resource")
+              count = c.fetchone()[0]
+              print(f"  resource table: {count} rows")
+              c.execute("SELECT name, resource_group, resource, namespace FROM resource LIMIT 30")
+              for row in c.fetchall():
+                  name, rgroup, res, ns = row
+                  tag = 'MANAGED' if name in MANAGED_UIDS else ('ORPHAN' if name in ORPHAN_UIDS else 'other')
+                  print(f"    [{tag}] name={name!r}  group={rgroup!r}  resource={res!r}")
+                  if tag == 'ORPHAN':
+                      c.execute("DELETE FROM resource WHERE name=? AND resource_group=? AND resource=? AND namespace=?",
+                                (name, rgroup, res, ns))
+                      print(f"      -> DELETED")
+              conn.commit()
+
+          # entity table (another possible unified storage table)
+          if 'entity' in tables:
+              c.execute("SELECT COUNT(*) FROM entity")
+              count = c.fetchone()[0]
+              print(f"  entity table: {count} rows")
+
+          conn.close()
+
+      # ── 3. List provisioner YAMLs ─────────────────────────────────────
+      print("\n=== Dashboard provisioner configs ===")
+      for f in sorted(glob.glob('/etc/grafana/provisioning/dashboards/*')):
+          print(f"  {f}")
+
+      # ── 4. Check for orphan UIDs in any provisioning dir ─────────────
+      print("\n=== All provisioned JSON files (all dirs) ===")
+      for yaml_file in glob.glob('/etc/grafana/provisioning/dashboards/*.yml') + \
+                        glob.glob('/etc/grafana/provisioning/dashboards/*.yaml'):
           try:
-              data = json.load(open(f))
-              uid = data.get('uid', 'NO_UID')
-              if uid in MANAGED_UIDS:
-                  print(f"  MANAGED : {os.path.basename(f)}  uid={uid}")
-              else:
-                  print(f"  ORPHAN  : {os.path.basename(f)}  uid={uid}  -> DELETING FILE")
-                  os.remove(f)
+              import yaml
+              cfg = yaml.safe_load(open(yaml_file))
+              for provider in (cfg or {}).get('providers', []):
+                  path = provider.get('options', {}).get('path', '')
+                  if path:
+                      print(f"  Provider '{provider.get('name')}' path: {path}")
+                      for jf in glob.glob(f"{path}/*.json"):
+                          try:
+                              data = json.load(open(jf))
+                              uid = data.get('uid', 'NO_UID')
+                              tag = 'MANAGED' if uid in MANAGED_UIDS else 'ORPHAN'
+                              print(f"    [{tag}] {os.path.basename(jf)}  uid={uid}")
+                              if tag == 'ORPHAN':
+                                  os.remove(jf)
+                                  print(f"      -> FILE DELETED")
+                          except Exception as e:
+                              print(f"    ERROR: {jf}: {e}")
           except Exception as e:
-              print(f"  ERROR   : {f}: {e}")
-
-      print("")
-      print("=== Dashboard table (before cleanup) ===")
-      conn = sqlite3.connect('/var/lib/grafana/grafana.db')
-      c = conn.cursor()
-
-      try:
-          c.execute("SELECT id, uid, title, is_folder FROM dashboard ORDER BY is_folder, title")
-      except sqlite3.OperationalError as e:
-          print(f"  ERROR querying dashboard table: {e}")
-          print("  Trying without is_folder column...")
-          c.execute("SELECT id, uid, title FROM dashboard ORDER BY title")
-          rows = [(id_, uid, title, None) for id_, uid, title in c.fetchall()]
-      else:
-          rows = c.fetchall()
-
-      to_delete = []
-      for id_, uid, title, is_folder in rows:
-          ftype = 'FOLDER' if is_folder else 'DASH '
-          managed = 'managed' if uid in MANAGED_UIDS else 'ORPHAN'
-          print(f"  {ftype} [{managed}] uid={uid!r:45s} title={title!r}")
-          if managed == 'ORPHAN' and not is_folder:
-              to_delete.append((id_, uid, title))
-
-      print("")
-      print("=== Deleting unmanaged dashboards from DB ===")
-      if not to_delete:
-          print("  Nothing to delete")
-      for id_, uid, title in to_delete:
-          print(f"  Deleting: id={id_}  uid={uid}  title={title}")
-          c.execute("DELETE FROM dashboard_provisioning WHERE dashboard_id=?", (id_,))
-          print(f"    dashboard_provisioning rows removed: {conn.total_changes}")
-          prev = conn.total_changes
-          c.execute("DELETE FROM dashboard WHERE id=?", (id_,))
-          print(f"    dashboard rows removed: {conn.total_changes - prev}")
-
-      conn.commit()
-      print(f"\nTotal deleted: {len(to_delete)} dashboard(s)")
-      conn.close()
+              print(f"  ERROR reading {yaml_file}: {e}")
       PYEOF
-  register: sqlite_purge
+  register: db_inspect
   changed_when: true
 
-- name: Show SQLite purge output
+- name: Show DB inspection output
   ansible.builtin.debug:
-    var: sqlite_purge.stdout_lines
+    var: db_inspect.stdout_lines
 
-- name: Start Grafana after SQLite maintenance
+- name: Start Grafana after DB maintenance
   systemd:
     name: grafana-server
     state: started
@@ -305,5 +359,11 @@
     user: admin
     password: "{{ vault_grafana_password }}"
     force_basic_auth: true
-    status_code: [200, 404]
+    status_code: [200, 400, 404]
   loop: "{{ grafana_orphan_uids }}"
+  register: api_deletes
+
+- name: Show API delete results
+  ansible.builtin.debug:
+    msg: "{{ item.item }}: HTTP {{ item.status }} — {{ item.json.message | default('deleted') }}"
+  loop: "{{ api_deletes.results }}"
