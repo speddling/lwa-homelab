@@ -203,9 +203,8 @@ Alerting is owned by **Prometheus + Alertmanager**. Grafana is display-only.
 | Order | Item | Notes |
 |---|---|---|
 | 1 | RAM — 2×16GB DDR4-3200 | Bring to 64GB. Cheap now, immediate headroom for k3s and CPU inference |
-| 2 | PSU — 850W (Seasonic or Corsair RMx) | Required before GPU. Current Antec EA-380D Green (380W) cannot support a discrete GPU |
-| 3 | Case fans — Noctua 140mm | Same time as PSU or GPU. Define R4 fits 140mm well |
-| 4 | GPU — RTX 3090 (24GB VRAM) | Local LLM unlock. 24GB VRAM fits 7B full quality, 13B quantized. Do not buy a smaller card first — 12GB VRAM is a real constraint for model sizes worth running |
+
+> **Hardware freeze after RAM.** No GPU, no PSU replacement, no case fans. Monolith is stable and sufficient for its current role. AI workloads are handled by B-4 on apex and eventually Lore.
 
 ### Role
 
@@ -217,7 +216,6 @@ Primary k3s worker node and household services platform. Hosts all Kubernetes wo
 |---|---|---|
 | Synapse | ✅ Active | MCP/AI tooling namespace. Claude's interface to the homelab. See `docs/Claude MCPs.md` |
 | Obelisk | Reserved | Client workspace on `/mnt/ssd-b` — isolated environment, future build |
-| Rommie | Reserved | Local LLM workspace — pending GPU hardware. *"Ship made flesh"* |
 
 ### Services
 
@@ -263,6 +261,48 @@ Primary k3s worker node and household services platform. Hosts all Kubernetes wo
 | 30800 | TCP | Synapse MCP server | apex only |
 | 445 | TCP | Samba | LAN |
 | 139 | TCP | Samba (NetBIOS) | LAN |
+
+---
+
+## AI Nodes
+
+### B-4 — apex (Active)
+
+Local LLM workspace running Ollama on the MacBook Air M4. Entry-point for AI/ML development. All 16GB unified memory available for inference via Metal backend. Runs 7B–13B models comfortably.
+
+| Spec | Detail |
+|---|---|
+| Host | `apex` (MacBook Air M4, 16GB unified memory) |
+| Software | Ollama (Metal backend) |
+| API | `http://localhost:11434` |
+| Status | Active — beginner AI/ML workflow |
+
+### Lore — Mac Mini (Planned)
+
+Dedicated AI inference node. Headless in closet. Added when B-4 on apex is outgrown.
+
+| Spec | Detail |
+|---|---|
+| Hardware | Mac Mini M4 Pro — 14-core CPU, 20-core GPU |
+| Memory | 48GB unified memory |
+| Network | 10 Gigabit Ethernet |
+| Storage | 512GB SSD base — Thunderbolt 5 for expansion |
+| Hostname | `lore` (reserved) |
+| IP | TBD — DHCP MAC-bound on arrival |
+| Software | Ollama headless — API served to LAN |
+| Status | Planned — budget pending |
+
+> Edu pricing applies via `.edu` email. 10GbE port future-proofs beyond current gigabit infrastructure.
+
+### Data — Mac Studio (Aspirational)
+
+Long-term AI platform. Not current plan — placeholder if the AI path continues and warrants the investment.
+
+| Spec | Detail |
+|---|---|
+| Hardware | Mac Studio (maxed chipset and RAM) |
+| Hostname | `data` (reserved) |
+| Status | Aspirational — not on current roadmap |
 
 ---
 
@@ -358,9 +398,7 @@ gh workflow run deploy-watchtower.yml
 | Item | Priority | Notes |
 | ---- | -------- | ----- |
 | RAM — 2×16GB DDR4-3200 | High | Bring Monolith to 64GB |
-| PSU — 850W | High | Required before GPU. Current 380W insufficient |
-| Case fans — Noctua 140mm | Medium | Same time as PSU or GPU |
-| GPU — RTX 3090 24GB | Medium | Local LLM / Rommie unlock. Hold out for 24GB, don't settle for 12GB |
+| Lore — Mac Mini M4 Pro 48GB / 10GbE | Medium | Dedicated AI inference node. Headless. Edu pricing. Budget pending |
 | UPS — CyberPower CP1500PFCLCD | Low | NUT role ready, waiting on hardware budget |
 | JetStream managed switch | Low | Replaces unmanaged TL-SG1210P, enables SNMP per-port stats |
 
