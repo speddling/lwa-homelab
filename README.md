@@ -67,11 +67,13 @@ chore/*   Maintenance, dependency updates
 
 Three MCP servers give Claude structured, safe access to the homelab:
 
-**Synapse** (`monolith:30800`) — Claude's eyes on the cluster. Read-only access to k3s pod state, Prometheus metrics, Alertmanager alerts, and the monolith filesystem. Deployed as a Kubernetes service. See `docs/synapse.md`.
+**Synapse** (`monolith:30800`) — Claude's eyes on the cluster. Read-only access to k3s pod state, Prometheus metrics, Alertmanager alerts, and the monolith filesystem. Deployed as a Kubernetes service.
 
-**Scribe** (`apex:8765`) — Claude's git control plane. Branch, stage, commit, push, and open PRs against this repo — with branch protection and path allowlisting baked in at the server level. Deployed as a launchd service on apex. See `docs/scribe.md`.
+**Scribe** (`apex:8765`) — Claude's git control plane. Branch, stage, commit, push, and open PRs against this repo — with branch protection and path allowlisting baked in at the server level. Deployed as a launchd service on apex.
 
-**Argus** (`watchtower:9800`) — Claude's eyes on the monitoring layer. Read-only access to live Alertmanager and Prometheus configs, systemd service and timer state, journald logs, and the Alertmanager and Prometheus HTTP APIs. Deployed as a systemd service on watchtower. See `docs/argus.md`.
+**Argus** (`watchtower:9800`) — Claude's eyes on the monitoring layer. Read-only access to live Alertmanager and Prometheus configs, systemd service and timer state, journald logs, and the Alertmanager and Prometheus HTTP APIs. Deployed as a systemd service on watchtower.
+
+See `docs/Claude MCPs.md` for full reference — tools, deployment details, security model, and operations for all three.
 
 ## Custom Exporters
 
@@ -83,7 +85,9 @@ Three MCP servers give Claude structured, safe access to the homelab:
 
 - **ArgoCD** — GitOps for k3s. Migrate from `kubectl apply` chains to declarative GitOps with automatic cluster reconciliation on merge
 - **Loki** — log aggregation on watchtower
-- **Rommie** — local LLM workspace on monolith (pending GPU — RTX 3090 24GB)
+- **B-4** — local LLM workspace running Ollama on `apex` (MacBook Air M4). Entry-point for local AI/ML development
+- **Lore** — dedicated AI inference node, Mac Mini M4 Pro 48GB / 10GbE, headless in closet. Added when B-4 on apex is outgrown
+- **Data** — aspirational. Maxed Mac Studio, long-term AI platform if the path continues. Not current plan
 - **Obelisk** — isolated client workspace on `/mnt/ssd-b`
 - **JetStream switch** — replaces unmanaged TL-SG1210P, enables per-port SNMP stats
 - **NUT** — UPS monitoring via CyberPower CP1500PFCLCD (role ready, waiting on hardware)
