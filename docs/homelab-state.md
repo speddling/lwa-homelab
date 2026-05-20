@@ -64,9 +64,11 @@
 | Spec     | Detail                        |
 | -------- | ----------------------------- |
 | Machine  | Asus VM40B Mini-PC            |
-| RAM      | 8GB                           |
-| Storage  | 1TB SSD                       |
-| OS       | Ubuntu Server 24.04 LTS       |
+| CPU      | Intel Celeron 1007U @ 1.50GHz — 2 cores / 2 threads |
+| RAM      | 8GB DDR3-1600 (2×4GB Micron 8KTF51264HZ-1G6E1) |
+| Storage  | 1TB SSD — Crucial CT1000MX500SSD1 |
+| OS       | Ubuntu Server 24.04.4 LTS       |
+| Kernel   | 6.8.0-111-generic              |
 | Hostname | `watchtower`                  |
 | IP       | 192.168.0.21 (DHCP MAC-bound) |
 
@@ -188,16 +190,18 @@ Alerting is owned by **Prometheus + Alertmanager**. Grafana is display-only.
 | Spec     | Detail                        |
 | -------- | ----------------------------- |
 | Machine  | AMD Tower (Fractal Design Define R4) |
-| CPU      | AMD Ryzen 7 5700G             |
-| RAM      | 32GB DDR4-3200 (2×16GB Corsair Vengeance LPX) |
-| OS       | Ubuntu Server 24.04 LTS       |
+| CPU      | AMD Ryzen 7 5700G with Radeon Graphics — 8 cores / 16 threads |
+| GPU      | AMD Radeon Vega (integrated, Cezanne) |
+| RAM      | 32GB DDR4-3200 (2×16GB Corsair Vengeance LPX CMK32GX4M2E3200C16) |
+| OS       | Ubuntu Server 24.04.4 LTS       |
+| Kernel   | 6.8.0-111-generic              |
 | Hostname | `monolith`                    |
 | IP       | 192.168.0.20 (DHCP MAC-bound) |
-| Storage  | 512GB NVMe — `/` (150G LVM, unallocated headroom) |
-|          | 512GB SSD — `/mnt/ssd-a` — k8s local-path provisioner |
-|          | 256GB SSD — `/mnt/ssd-b` — isolated workspace / client jumpbox |
-|          | 4TB HDD — `/mnt/hdd-c` — music library / fileserver / bulk storage |
-|          | 2TB HDD — `/mnt/hdd-d` — mirror of music-library and Samba share from hdd-c |
+| Storage  | 512GB NVMe — Samsung PM9A1 — `/` (150G LVM, unallocated headroom) |
+|          | 500GB SSD — Crucial CT500MX500SSD1 — `/mnt/ssd-a` — k8s local-path provisioner |
+|          | 256GB SSD — Crucial CT256M55 — `/mnt/ssd-b` — isolated workspace / client jumpbox |
+|          | 3.6TB HDD — Seagate ST4000DM004 — `/mnt/hdd-c` — music library / fileserver / bulk storage |
+|          | 1.8TB HDD — Hitachi HUA72202 — `/mnt/hdd-d` — mirror of hdd-c |
 
 ### Upgrade Roadmap
 
@@ -428,13 +432,18 @@ Long-term AI platform. Not current plan — placeholder if the AI path continues
 
 ## Studio
 
-| Spec     | Detail                                                       |
-| -------- | ------------------------------------------------------------ |
-| Machine  | Dell Precision                                               |
-| OS       | Ubuntu Studio (KDE)                                          |
-| Hostname | `studio`                                                     |
-| IP       | 192.168.0.109 (DHCP MAC-bound)                               |
-| Role     | Personal DAW — Reaper with M-Audio Air 192\|14. Secondary SSH access to monolith. |
+| Spec | Detail |
+| ---- | ------ |
+| Machine | Dell Precision 5560 |
+| CPU | Intel Core i9-11950H @ 2.60GHz — 8 cores / 16 threads |
+| RAM | 32GB DDR4-3200 (2×16GB Samsung M471A2G43BB2-CWE) |
+| Storage | 512GB NVMe — Samsung PM9A1 |
+| GPU | Intel UHD Graphics (Tiger Lake-H, integrated) |
+| OS | Ubuntu Studio 24.04 LTS (KDE Plasma 5.27.12 · Wayland) |
+| Kernel | 6.8.0-111-lowlatency |
+| Hostname | `studio` |
+| IP | 192.168.0.109 (DHCP MAC-bound) |
+| Role | Personal DAW — Reaper with M-Audio Air 192\|14. Secondary SSH access to monolith. |
 
 ### Mounts
 
