@@ -2,12 +2,13 @@
 #
 # Note: cert-manager CRDs and the controller itself are installed by the
 # bootstrap workflow (kubectl apply of the upstream static manifest).
-# ArgoCD adopts and manages the cluster-level config: namespace, Cloudflare
-# secret placeholder, and ClusterIssuers.
+# ArgoCD adopts and manages the cluster-level config: namespace and
+# ClusterIssuers.
 #
-# The Cloudflare secret actual value is set by the bootstrap workflow —
-# ArgoCD will show it as Synced since the placeholder is overwritten
-# before ArgoCD first sees it.
+# The cloudflare-api-token Secret is intentionally excluded from ArgoCD
+# management — it contains sensitive credentials injected by the bootstrap
+# workflow and must not be overwritten by GitOps sync. It is managed
+# out-of-band (bootstrap workflow → kubectl create secret).
 
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -25,6 +26,13 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: cloudflare-api-token
+      namespace: cert-manager
+      jsonPointers:
+        - /data
   syncPolicy:
     automated:
       prune: true

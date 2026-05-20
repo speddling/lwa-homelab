@@ -50,9 +50,14 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
+          # --save-config ensures the last-applied annotation is set so
+          # future kubectl apply calls don't warn about missing annotations.
+          # The secret is excluded from ArgoCD sync via ignoreDifferences
+          # in kubernetes/apps/cert-manager.yaml.
           kubectl create secret generic cloudflare-api-token \
             --namespace cert-manager \
             --from-literal=api-token="${CLOUDFLARE_API_TOKEN}" \
+            --save-config \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Apply ClusterIssuers
