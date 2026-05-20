@@ -65,7 +65,7 @@
 | -------- | ----------------------------- |
 | Machine  | Asus VM40B Mini-PC            |
 | CPU      | Intel Celeron 1007U @ 1.50GHz — 2 cores / 2 threads |
-| RAM      | 8GB (dmidecode not installed) |
+| RAM      | 8GB DDR3-1600 (2×4GB Micron 8KTF51264HZ-1G6E1) |
 | Storage  | 1TB SSD — Crucial CT1000MX500SSD1 |
 | OS       | Ubuntu Server 24.04.4 LTS       |
 | Kernel   | 6.8.0-111-generic              |

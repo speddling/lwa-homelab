@@ -9,7 +9,7 @@ Personal homelab built with production-grade IaC discipline. Everything is code,
 | MacBook Air M4 (2025) | `apex` | 16GB unified · 256GB | Primary workstation · control plane · all authoring originates here |
 | Dell Precision 5560 | `studio` | i9-11950H · 32GB DDR4-3200 · 512GB NVMe | Personal DAW — Reaper + M-Audio Air 192\|14 |
 | AMD Ryzen 7 5700G | `monolith` | 8c/16t · 32GB DDR4-3200 · 512GB NVMe + 500GB SSD + 256GB SSD + 3.6TB + 1.8TB HDD | k3s single-node cluster · household services |
-| Asus VM40B | `watchtower` | Celeron 1007U · 8GB · 1TB Crucial MX500 | Always-on DNS + monitoring — never runs workloads |
+| Asus VM40B | `watchtower` | Celeron 1007U · 8GB DDR3-1600 · 1TB Crucial MX500 | Always-on DNS + monitoring — never runs workloads |
 
 ## Network
 
