@@ -38,7 +38,8 @@ jobs:
 
       - name: Install cert-manager v1.20.2
         run: |
-          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.20.2/cert-manager.yaml
+          # --server-side avoids the 262144-byte annotation limit on large CRDs
+          kubectl apply --server-side -f https://github.com/cert-manager/cert-manager/releases/download/v1.20.2/cert-manager.yaml
           echo "Waiting for cert-manager webhooks to be ready..."
           kubectl rollout status deployment/cert-manager -n cert-manager --timeout=120s
           kubectl rollout status deployment/cert-manager-webhook -n cert-manager --timeout=120s
@@ -68,7 +69,8 @@ jobs:
 
       - name: Install ArgoCD v3.3.0
         run: |
-          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.0/manifests/install.yaml
+          # --server-side avoids the 262144-byte annotation limit on large CRDs
+          kubectl apply -n argocd --server-side -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.0/manifests/install.yaml
           echo "Waiting for ArgoCD server to be ready..."
           kubectl rollout status deployment/argocd-server -n argocd --timeout=180s
 
