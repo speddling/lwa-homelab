@@ -1,0 +1,21 @@
+---
+# Firewall configuration for Monolith.
+# Manages UFW rules declaratively — all rules are defined in
+# roles/ufw/tasks/main.yml.
+#
+# Run via: Actions → Deploy Monolith → Run workflow
+# Or manually:
+#   cd services/monolith/ansible
+#   ansible-playbook -i inventory.ini playbooks/firewall.yml \
+#     --vault-password-file ~/homelab/.vault_pass
+
+- name: Configure Monolith firewall
+  hosts: monolith
+  become: true
+
+  vars_files:
+    - "{{ playbook_dir }}/../../../../ansible/vars/main.yml"
+    - "{{ playbook_dir }}/../../../../ansible/vars/vault.yml"
+
+  roles:
+    - ufw

@@ -43,6 +43,7 @@
 | `grafana.littlewolfacres.com` | 192.168.0.21 |
 | `monolith.littlewolfacres.com` | 192.168.0.20 |
 | `navidrome.littlewolfacres.com` | 192.168.0.20 |
+| `argocd.littlewolfacres.com` | 192.168.0.20 |
 | `studio.littlewolfacres.com` | 192.168.0.109 |
 | `apex.littlewolfacres.com` | 192.168.0.19 |
 
@@ -249,7 +250,7 @@ Primary k3s worker node and household services platform. Hosts all Kubernetes wo
 |---|---|---|
 | State | Terraform Cloud (`littlewolfacres` org, `monolith` workspace) | app.terraform.io |
 | Config | Ansible | `services/monolith/ansible/` |
-| Pipeline | GitHub Actions | `.github/workflows/` |
+| Pipeline | GitHub Actions | `.github/workflows/deploy-monolith.yml` |
 | Runner | Self-hosted, label: `monolith` | Installed on Monolith as systemd service |
 
 ### UFW Rules
@@ -257,10 +258,16 @@ Primary k3s worker node and household services platform. Hosts all Kubernetes wo
 | Port | Protocol | Service | Allowed From |
 |---|---|---|---|
 | 22 | TCP | SSH | apex, studio |
+| 80 | TCP | Traefik HTTP | LAN |
+| 443 | TCP | Traefik HTTPS | LAN |
+| 139 | TCP | Samba (NetBIOS) | LAN |
+| 445 | TCP | Samba | LAN |
 | 9100 | TCP | node_exporter | watchtower |
 | 30800 | TCP | Synapse MCP server | apex only |
-| 445 | TCP | Samba | LAN |
-| 139 | TCP | Samba (NetBIOS) | LAN |
+| 30880 | TCP | ArgoCD NodePort fallback | LAN |
+| 30882 | TCP | ArgoCD app-controller metrics | watchtower |
+| 30883 | TCP | ArgoCD server metrics | watchtower |
+| 30900 | TCP | kube-state-metrics | watchtower |
 
 ---
 
@@ -504,4 +511,4 @@ gh workflow run deploy-watchtower.yml
 ---
 
 ## Post-Watchtower Cleanup
-- Remove UFW from fileserver Ansible playbook — firewall policy managed at network layer via ER605
+- Remove UFW install task from fileserver Ansible playbook — UFW is now managed by `deploy-monolith.yml` via the `ufw` role

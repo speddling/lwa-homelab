@@ -1,0 +1,134 @@
+---
+# UFW firewall rules for Monolith
+#
+# Policy: default deny inbound, allow outbound.
+# All rules are idempotent — safe to re-run at any time.
+#
+# Port inventory:
+#   22    SSH              — apex + studio only
+#   80    Traefik HTTP     — LAN (redirects to 443)
+#   443   Traefik HTTPS    — LAN (ArgoCD, Navidrome, future ingress)
+#   139   Samba NetBIOS    — LAN
+#   445   Samba            — LAN
+#   9100  node_exporter    — watchtower only
+#   30800 Synapse MCP      — apex only
+#   30880 ArgoCD NodePort  — LAN (fallback when DNS is unstable)
+#   30882 ArgoCD metrics   — watchtower only (Prometheus scrape)
+#   30883 ArgoCD metrics   — watchtower only (Prometheus scrape)
+#   30900 kube-state-metr  — watchtower only (Prometheus scrape)
+
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+    update_cache: true
+
+- name: Set default inbound policy to deny
+  community.general.ufw:
+    default: deny
+    direction: incoming
+
+- name: Set default outbound policy to allow
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+
+# ── SSH ────────────────────────────────────────────────────────────────────
+
+- name: Allow SSH from apex
+  community.general.ufw:
+    rule: allow
+    port: "{{ port_ssh }}"
+    proto: tcp
+    src: "{{ ip_apex }}"
+
+- name: Allow SSH from studio
+  community.general.ufw:
+    rule: allow
+    port: "{{ port_ssh }}"
+    proto: tcp
+    src: "{{ ip_studio }}"
+
+# ── Traefik ingress ────────────────────────────────────────────────────────
+
+- name: Allow HTTP from LAN (Traefik)
+  community.general.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+    src: "192.168.0.0/24"
+
+- name: Allow HTTPS from LAN (Traefik)
+  community.general.ufw:
+    rule: allow
+    port: "443"
+    proto: tcp
+    src: "192.168.0.0/24"
+
+# ── Samba ──────────────────────────────────────────────────────────────────
+
+- name: Allow Samba NetBIOS from LAN
+  community.general.ufw:
+    rule: allow
+    port: "{{ port_samba_netbios }}"
+    proto: tcp
+    src: "192.168.0.0/24"
+
+- name: Allow Samba from LAN
+  community.general.ufw:
+    rule: allow
+    port: "{{ port_samba }}"
+    proto: tcp
+    src: "192.168.0.0/24"
+
+# ── Prometheus exporters ───────────────────────────────────────────────────
+
+- name: Allow node_exporter from watchtower
+  community.general.ufw:
+    rule: allow
+    port: "{{ port_node_exporter }}"
+    proto: tcp
+    src: "{{ ip_watchtower }}"
+
+- name: Allow ArgoCD app-controller metrics from watchtower
+  community.general.ufw:
+    rule: allow
+    port: "{{ port_argocd_metrics_controller }}"
+    proto: tcp
+    src: "{{ ip_watchtower }}"
+
+- name: Allow ArgoCD server metrics from watchtower
+  community.general.ufw:
+    rule: allow
+    port: "{{ port_argocd_metrics_server }}"
+    proto: tcp
+    src: "{{ ip_watchtower }}"
+
+- name: Allow kube-state-metrics from watchtower
+  community.general.ufw:
+    rule: allow
+    port: "{{ port_kube_state_metrics }}"
+    proto: tcp
+    src: "{{ ip_watchtower }}"
+
+# ── k3s NodePorts ──────────────────────────────────────────────────────────
+
+- name: Allow Synapse MCP from apex
+  community.general.ufw:
+    rule: allow
+    port: "{{ port_synapse_mcp }}"
+    proto: tcp
+    src: "{{ ip_apex }}"
+
+- name: Allow ArgoCD NodePort fallback from LAN
+  community.general.ufw:
+    rule: allow
+    port: "{{ port_argocd_nodeport }}"
+    proto: tcp
+    src: "192.168.0.0/24"
+
+# ── Enable UFW ─────────────────────────────────────────────────────────────
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
