@@ -1,13 +1,29 @@
+# Navidrome Traefik Ingress
+#
+# Routes https://navidrome.littlewolfacres.com → navidrome service:4533
+# TLS certificate issued and renewed automatically by cert-manager via
+# Cloudflare DNS-01 challenge.
+#
+# Traefik terminates TLS on websecure (443) and forwards plain HTTP to
+# the navidrome service. Same pattern as ArgoCD ingress.
+
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: navidrome
   namespace: navidrome
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
+  tls:
+    - hosts:
+        - navidrome.littlewolfacres.com
+      secretName: navidrome-tls
   rules:
-    - http:
+    - host: navidrome.littlewolfacres.com
+      http:
         paths:
           - path: /
             pathType: Prefix
