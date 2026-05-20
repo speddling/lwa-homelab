@@ -503,7 +503,7 @@ gh workflow run deploy-watchtower.yml
 | Item | Priority | Notes |
 | ---- | -------- | ----- |
 | ArgoCD + cert-manager | ✅ Done | GitOps live, HTTPS working |
-| Navidrome ingress — upgrade to HTTPS | Low | Update entrypoint from `web` to `websecure` + add cert-manager annotation |
+| Navidrome ingress — upgrade to HTTPS | ✅ Done | websecure entrypoint + cert-manager annotation |
 | Fileserver idempotency | Low | Fix `smbpasswd -a` in fileserver playbook — fails on re-run when user exists |
 | Loki — log aggregation | Low | Add to Watchtower stack |
 | Obelisk — client workspace on `/mnt/ssd-b` | Low | Isolated client environment, reserved name |

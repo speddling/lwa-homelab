@@ -66,7 +66,7 @@ chore/*   Maintenance, dependency updates
 | Service | Host | URL | Status |
 |---|---|---|---|
 | ArgoCD | monolith | https://argocd.littlewolfacres.com | ✅ Online |
-| Navidrome | monolith | https://navidrome.littlewolfacres.com (HTTP for now) | ✅ Online |
+| Navidrome | monolith | https://navidrome.littlewolfacres.com | ✅ Online |
 | Minecraft server | monolith | UDP 19132 | ✅ Online |
 | Samba file share | monolith | — | ✅ Online |
 | hdd-d mirror | monolith | — nightly 02:00 | ✅ Online |
