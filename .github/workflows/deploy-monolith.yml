@@ -5,14 +5,12 @@ on:
     branches: [master]
     paths:
       - 'services/monolith/ansible/**'
-      - 'services/fileserver/ansible/**'
       - 'ansible/vars/**'
       - '.github/workflows/deploy-monolith.yml'
   pull_request:
     branches: [master]
     paths:
       - 'services/monolith/ansible/**'
-      - 'services/fileserver/ansible/**'
       - 'ansible/vars/**'
       - '.github/workflows/deploy-monolith.yml'
   workflow_dispatch:
@@ -43,7 +41,6 @@ jobs:
           ansible-playbook -i inventory.ini playbooks/monitoring.yml --syntax-check
 
   deploy:
-    name: Deploy
     needs: validate
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: [self-hosted, monolith]
@@ -66,13 +63,6 @@ jobs:
         working-directory: services/monolith/ansible
         run: |
           ansible-playbook -i inventory.ini playbooks/firewall.yml \
-            --vault-password-file ~/homelab/.vault_pass
-
-      - name: Run Ansible — Fileserver
-        working-directory: services/monolith/ansible
-        run: |
-          ansible-playbook -i inventory.ini \
-            ../../fileserver/ansible/playbooks/fileserver.yml \
             --vault-password-file ~/homelab/.vault_pass
 
       - name: Run Ansible — Monitoring agents
