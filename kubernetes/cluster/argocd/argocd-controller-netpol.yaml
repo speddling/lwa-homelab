@@ -1,0 +1,39 @@
+# Supplementary NetworkPolicy — allow Prometheus scraping of the
+# argocd-application-controller metrics port (8082) from the LAN.
+#
+# ArgoCD 3.x ships its own NetworkPolicy for the application controller
+# (argocd-application-controller-network-policy) which allows ingress on
+# port 8082 from pods only (namespaceSelector with empty labels = any pod
+# in any namespace). External traffic from non-pod IPs — including Prometheus
+# on Watchtower (192.168.0.21) scraping via NodePort — is blocked.
+#
+# In Kubernetes, multiple NetworkPolicies targeting the same pod are unioned.
+# This policy adds an ipBlock rule for the LAN alongside ArgoCD's existing
+# policy, allowing Prometheus to reach port 8082 externally without modifying
+# ArgoCD's own managed NetworkPolicy (which would be reset on sync).
+#
+# Managed by: ArgoCD argocd-cluster-config Application
+# Watches: kubernetes/cluster/argocd/
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: argocd-controller-prometheus-scrape
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/component: application-controller
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-application-controller
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 192.168.0.0/24
+      ports:
+        - protocol: TCP
+          port: 8082
