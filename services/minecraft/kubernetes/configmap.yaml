@@ -10,5 +10,6 @@ data:
   DIFFICULTY: "normal"
   MAX_PLAYERS: "2"
   SERVER_NAME: "Little Wolf Acres"
-  ALLOW_CHEATS: "false"
+  ALLOW_CHEATS: "true"
   ONLINE_MODE: "true"
+  OPS: "Makamakamelon,MamaKittaly"
