@@ -20,7 +20,7 @@ spec:
             - sh
             - -c
             - |
-              WORLD_DIR="/data/worlds/my-realm"
+              WORLD_DIR="/data/worlds/littlewolfacres"
               MARKER="/data/worlds/.imported"
 
               if [ -f "$MARKER" ]; then
@@ -35,7 +35,7 @@ spec:
                 touch "$MARKER"
                 echo "Import complete."
               else
-                echo "No .mcworld file found, starting fresh."
+                echo "No .mcworld file found, starting fresh world."
               fi
           volumeMounts:
             - name: minecraft-data
@@ -69,5 +69,5 @@ spec:
             claimName: minecraft-data
         - name: world-import
           hostPath:
-            path: /opt/minecraft/import   # ← Ansible drops the .mcworld here
+            path: /opt/minecraft/import
             type: DirectoryOrCreate
