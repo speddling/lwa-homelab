@@ -1,0 +1,40 @@
+name: Import Minecraft World
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type 'yes' to confirm — this will overwrite the current world"
+        required: true
+
+jobs:
+  import:
+    if: ${{ github.event.inputs.confirm == 'yes' }}
+    runs-on: [self-hosted, monolith]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage .mcworld file on monolith
+        run: |
+          ansible-playbook \
+            -i services/minecraft/ansible/inventory.ini \
+            services/minecraft/ansible/playbooks/import-world.yml
+
+      - name: Clear import marker so initContainer re-runs
+        run: |
+          kubectl exec -n minecraft \
+            $(kubectl get pod -n minecraft -l app=minecraft-bedrock -o jsonpath='{.items[0].metadata.name}') \
+            -- rm -f /data/worlds/.imported
+
+      - name: Bounce pod to trigger world import
+        run: |
+          kubectl delete pod -n minecraft -l app=minecraft-bedrock
+          kubectl rollout status deployment/minecraft-bedrock -n minecraft --timeout=120s
+
+      - name: Confirm server started
+        run: |
+          sleep 10
+          kubectl logs -n minecraft \
+            $(kubectl get pod -n minecraft -l app=minecraft-bedrock -o jsonpath='{.items[0].metadata.name}') \
+            | grep -E "(Import complete|Starting fresh|Server started)"
