@@ -609,16 +609,16 @@
 
       <p>I was writing BASIC, drawing sprites, and sharing cassette-tape games with local user groups before most people knew what a personal computer was. High school at brand-new Wallkill Valley Regional in Hamburg, NJ brought BASIC, machine language, Pascal, and FORTRAN. The head of the computer lab, Mr. Zimmerman, told me programmers were going to be glorified secretaries and the real money was in hardware design. So I pivoted. The world did not.</p>
 
-      <p>The correction came when I found out our local BBS had purchased an internet gateway. I upgraded my Apple IIc to a Performa 6200CD and figured out the rest as I went. ISP work, carrier NOC operations, cloud infrastructure, DevOps... and somewhere along the way, I ended up back at university, pursuing a BS in Computer Science at <a href="https://maestro.org" style="color: var(--ember); text-decoration: none; border-bottom: 0.5px solid rgba(232,135,74,0.4);">Maestro University</a>, with a focus on AI. The lab isn't separate from that path. It's part of it.</p>
+      <p>The correction came when I found out our local BBS had purchased an internet gateway. I upgraded my Apple IIc to a Performa 6200CD and figured out the rest as I went. ISP work, carrier NOC operations, cloud infrastructure, DevOps... and somewhere along the way, I ended up back at university, pursuing a BS in Computer Science at <a href="https://maestro.org" style="color: var(--ember); text-decoration: none; border-bottom: 0.5px solid rgba(232,135,74,0.4);" target="_blank" rel="noopener noreferrer">Maestro University</a>, with a focus on AI. The lab isn't separate from that path. It's part of it.</p>
 
-      <p>Little Wolf Acres is 2.3 acres in rural New Jersey. The household includes my wife, our daughter, two Kangals (Brutus and Junia, people-sized house dogs with strong opinions about the property line), two beagles (Soul and Maka, the latter better known online as Makamakamelon), and Cooper the rescued tuxedo cat. At some point the house also acquired a proper homelab. It started, as these things do, with one server. Then a second machine for DNS. Then monitoring. Then GitOps. Then three MCP servers so my AI assistant could read logs and open pull requests.</p>
+      <p>Little Wolf Acres is 2.3 acres in rural New Jersey. The household includes my wife, our daughter, two Kangals (Brutus and Junia, people-sized house dogs with strong opinions about the property line), two beagles (Maka and Soul), and Cooper the rescued tuxedo cat. At some point the house also acquired a proper homelab. It started, as these things do, with one server. Then a second machine for DNS. Then monitoring. Then GitOps. Then three MCP servers so my AI assistant could read logs and open pull requests.</p>
 
       <p>That escalated appropriately.</p>
 
       <p>The goal was never just to have stuff running. The goal was to build infrastructure the same way I build it at work: everything in code, nothing clicked through a UI and forgotten, changes tracked and reviewed, documentation kept current. If I wouldn't do it in production without a PR, I don't do it here without one either. The lab grows as I grow. Right now that means getting more serious about AI infrastructure, local inference, and where the industry is heading. School is changing how I see the landscape, and the lab is where I work it out in practice.</p>
 
       <div class="callout">
-        <p><strong>The honest pitch to technical people:</strong> this is a portfolio in infrastructure form. Every config file, Ansible role, Kubernetes manifest, and GitHub Actions workflow lives in the <a href="https://github.com/speddling/homelab" style="color: var(--ember); text-decoration: none; border-bottom: 0.5px solid rgba(232,135,74,0.4);">public homelab repo</a> with commit history going back to the first line. If I put this level of rigor into a home network that serves a family and their very large dogs, you can imagine what I bring to the job.</p>
+        <p><strong>The honest pitch to technical people:</strong> this is a portfolio in infrastructure form. Every config file, Ansible role, Kubernetes manifest, and GitHub Actions workflow lives in the <a href="https://github.com/speddling/homelab" style="color: var(--ember); text-decoration: none; border-bottom: 0.5px solid rgba(232,135,74,0.4);" target="_blank" rel="noopener noreferrer">public homelab repo</a> with commit history going back to the first line. If I put this level of rigor into a home network that serves a family and their very large dogs, you can imagine what I bring to the job.</p>
       </div>
 
       <p>The page you're reading is the story of how it's all built, what's running, and where it's going. The short version lives here; the deep technical specs are in the expandable sections throughout.</p>
@@ -823,7 +823,7 @@
         <summary>The Minecraft story (it's a good one)</summary>
         <div class="details-body">
           <p style="color: var(--cream-dim); font-size: 0.88rem; line-height: 1.7;">The server spent months in a broken state because the original setup used a <code>LoadBalancer</code> service type for UDP traffic. k3s ServiceLB silently fails for UDP, so the server started fine but nobody could connect. After diagnosing that, switching to <code>NodePort</code>, fixing the world-import initContainer, setting up operator permissions for both players, and adding DNS, the server was live.</p>
-          <p style="color: var(--cream-dim); font-size: 0.88rem; line-height: 1.7; margin-top: 0.8rem;">Then I built a Slack bot (the Zombatron Importer) that runs as a launchd service on Apex. Drop a <code>.mcworld</code> file in the private <code>#zombatron</code> Slack channel, the bot downloads it, SCPs it to Monolith, asks for confirmation, and on "yes" triggers a GitHub Actions workflow that clears the import marker and bounces the pod. Uses Socket Mode so no inbound ports needed. The world export from the $8/month Realm subscription is pending, at which point we cancel the subscription.</p>
+          <p style="color: var(--cream-dim); font-size: 0.88rem; line-height: 1.7; margin-top: 0.8rem;">Then I built a Slack bot (the Zombatron Importer) that runs as a launchd service on Apex. Drop a <code>.mcworld</code> file in the private <code>#zombatron</code> Slack channel, the bot downloads it, SCPs it to Monolith, asks for confirmation, and on "yes" triggers a GitHub Actions workflow that clears the import marker and bounces the pod. Uses Socket Mode so no inbound ports needed.</p>
           <div class="tags">
             <span class="tag">itzg/minecraft-bedrock-server</span>
             <span class="tag">NodePort 30132/UDP</span>
@@ -902,7 +902,7 @@
 
       <p style="margin-top: 1.5rem;">All three are FastMCP servers running as system services (launchd on Apex, systemd on Watchtower, Kubernetes on Monolith). Claude Desktop connects to them via Streamable HTTP. UFW restricts each to Apex's IP only.</p>
 
-      <p style="margin-top: 1rem;">Alongside the MCP layer, Apex runs <strong style="color: var(--cream);">B-4</strong>, an Ollama instance using the M4's unified memory for local LLM inference via Metal backend. It's the starting point for AI/ML workflows until <strong style="color: var(--cream);">Lore</strong> (a dedicated Mac Mini M4 Pro with 48GB) can be added later this year. School is the context: I'm at Maestro University studying CS with an AI focus, and the lab is where theory meets the actual hardware.</p>
+      <p style="margin-top: 1rem;">Alongside the MCP layer, Apex runs <strong style="color: var(--cream);">B-4</strong>, an Ollama instance using the M4's unified memory for local LLM inference via Metal backend. It's the starting point for AI/ML workflows until <strong style="color: var(--cream);">Lore</strong> (a dedicated Mac Mini M4 Pro with 48GB, arriving later this year) takes over dedicated inference duties on the LAN. School is the thread connecting all of it: Maestro University, CS with an AI focus, and a lab that grows alongside the coursework. Before the Masters begins in earnest, <strong style="color: var(--cream);">Data</strong> enters the picture: a maxed-out Mac Studio, or whatever architecture best justifies the spend at that moment. The lab isn't racing ahead of the learning. They move together.</p>
 
       <details>
         <summary>MCP security model</summary>
@@ -985,7 +985,7 @@
     <p>Rural New Jersey &nbsp;·&nbsp; Built and maintained by <a href="resume/">James Hart</a></p>
     <div class="footer-links">
       <a href="https://littlewolfacres.com">littlewolfacres.com</a>
-      <a href="https://github.com/speddling/homelab">github.com/speddling/homelab</a>
+      <a href="https://github.com/speddling/homelab" target="_blank" rel="noopener noreferrer">github.com/speddling/homelab</a>
       <a href="resume/">View Resume</a>
     </div>
   </footer>
