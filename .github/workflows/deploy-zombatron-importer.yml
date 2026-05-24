@@ -12,14 +12,33 @@ on:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, apex]
+    name: Deploy Zombatron Importer to apex
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy Zombatron Importer via Ansible
+      - name: Configure SSH key
         run: |
-          ansible-playbook \
-            --vault-password-file ~/.vault_pass \
-            -i services/apex/ansible/inventory.ini \
-            services/apex/ansible/playbooks/deploy-zombatron-importer.yml
+          mkdir -p ~/.ssh
+          echo "${{ secrets.APEX_SSH_KEY }}" > ~/.ssh/apex_deploy
+          chmod 600 ~/.ssh/apex_deploy
+          ssh-keyscan -H apex.littlewolfacres.com >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Run Ansible playbook on apex
+        run: |
+          ssh -i ~/.ssh/apex_deploy \
+              -o StrictHostKeyChecking=no \
+              speddling@apex.littlewolfacres.com \
+              "cd homelab && ansible-playbook \
+                --vault-password-file .vault_pass \
+                -i services/apex/ansible/inventory.ini \
+                services/apex/ansible/playbooks/deploy-zombatron-importer.yml \
+                -v"
+
+      - name: Verify service is running
+        run: |
+          ssh -i ~/.ssh/apex_deploy \
+              -o StrictHostKeyChecking=no \
+              speddling@apex.littlewolfacres.com \
+              "launchctl list com.littlewolfacres.zombatron-importer \
+               && echo 'Zombatron Importer is running' \
+               || (echo 'Service not found'; exit 1)"
