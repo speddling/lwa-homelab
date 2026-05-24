@@ -32,10 +32,12 @@ Server address: `zombatron.littlewolfacres.com:30132`
 | Internal port | 19132 |
 | NodePort | 30132 |
 | Service type | NodePort (LoadBalancer is broken for UDP in k3s) |
-| DNS | `zombatron.littlewolfacres.com` → 192.168.0.20 (AdGuard rewrite) |
+| LAN DNS | `zombatron.littlewolfacres.com` → 192.168.0.20 (AdGuard rewrite) |
+| Public DNS | `zombatron.littlewolfacres.com` → WAN IP (Cloudflare A record, DNS only) |
 | Client connection | `zombatron.littlewolfacres.com` port `30132` |
 
 > ⚠️ k3s ServiceLB does not reliably handle UDP — always use NodePort for UDP services.
+> Cloudflare cannot proxy UDP game traffic — the zombatron A record must be DNS only (grey cloud).
 
 ---
 
@@ -274,7 +276,7 @@ Python service running as a launchd agent on apex. Connects to Slack via Socket 
 |---|---|---|
 | `slack-minecraft-import.yml` | Bot dispatch (GitHub API) | Clears import marker, bounces pod — file already staged by bot |
 | `import-minecraft-world.yml` | Manual (`workflow_dispatch`, confirm: yes) | Stages via Ansible, clears marker, bounces pod |
-| `deploy-zombatron-importer.yml` | Push to `services/apex/**` or manual | Deploys importer service via Ansible on apex |
+| `deploy-zombatron-importer.yml` | Push to `services/apex/**` or manual | SSHs to apex, runs Ansible playbook on-host |
 
 ---
 
@@ -288,6 +290,7 @@ Python service running as a launchd agent on apex. Connects to Slack via Socket 
 | **Marketplace content won't transfer** | License-locked to Xbox accounts, not the world file |
 | **Both players are ops** | `MamaKittaly` and `Makamakamelon` — can use all commands in-game |
 | **`.mcworld` is gitignored** | `services/minecraft/files/*.mcworld` — world data stays out of version control |
+| **Cloudflare A record must be DNS only** | UDP traffic cannot be proxied — grey cloud, no orange cloud |
 | **No automatic backups yet** | Consider a k8s CronJob to tarball the PVC — see Pending Work |
 
 ---

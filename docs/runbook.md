@@ -1,6 +1,6 @@
 # Little Wolf Acres — Homelab Runbook
 > Operational reference for day-to-day tasks, troubleshooting, and maintenance.
-> Last updated: 2026-05-20
+> Last updated: 2026-05-23
 
 ---
 
@@ -116,8 +116,11 @@ kubectl rollout restart deployment/argocd-server -n argocd
 1. Create `kubernetes/apps/<service>.yaml` — ArgoCD Application manifest
 2. Add `<hostname>.littlewolfacres.com` to AdGuard Home rewrite table in
    `services/watchtower/ansible/roles/adguard/templates/AdGuardHome.yaml.j2`
-3. Add the same hostname as a public A record in Cloudflare DNS (DNS only, reserved IP)
-4. PR → merge → ArgoCD auto-syncs — done
+3. Add matching A record in Cloudflare DNS:
+   - Type: `A`, Name: `<hostname>`, Value: WAN IP, Proxy: **DNS only (grey cloud)**
+   - UDP services (e.g. Minecraft) **cannot** use the orange Cloudflare proxy — grey cloud only
+4. Update `homelab-state.md` DNS rewrites table
+5. PR → merge → ArgoCD auto-syncs, `deploy-watchtower` applies the AdGuard rewrite — done
 
 ### cert-manager / TLS
 
@@ -279,8 +282,10 @@ next deploy-watchtower run. All rewrites are managed in:
 
 Process:
 1. Add entry to `AdGuardHome.yaml.j2` under `filtering.rewrites`
-2. Add matching A record in Cloudflare DNS (DNS only, reserved IP) for fallback
-3. PR → merge → run **Deploy Watchtower Config** workflow
+2. Add matching A record in Cloudflare DNS:
+   - Type: `A`, Name: `<hostname>`, Value: WAN IP, Proxy: **DNS only (grey cloud)**
+   - UDP services (e.g. Minecraft/Zombatron) cannot use Cloudflare proxy — grey cloud only
+3. PR → merge → `deploy-watchtower` applies the AdGuard rewrite automatically
 4. Update `homelab-state.md` DNS rewrites table
 
 ---
@@ -469,5 +474,8 @@ gh workflow run deploy-monolith.yml
 | `deploy-watchtower.yml` | Push to master (watchtower paths) | DNS, monitoring, exporters |
 | `deploy-monolith.yml` | Push to master (monolith paths) | Firewall, monitoring agents |
 | `deploy-fileserver.yml` | Manual | Samba config |
+| `deploy-zombatron-importer.yml` | Push to master (`services/apex/**`) | Zombatron Importer launchd service on apex |
+| `import-minecraft-world.yml` | Manual (confirm: yes) | Stage world via Ansible + bounce pod |
+| `slack-minecraft-import.yml` | Zombatron Importer bot | Clear import marker + bounce pod |
 | `bootstrap-argocd.yml` | Manual (once) | cert-manager + ArgoCD install |
 | `provision-k3s.yml` | Manual | k3s cluster init |
