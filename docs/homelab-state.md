@@ -1,5 +1,5 @@
 # Little Wolf Acres — Homelab Current State
-> Last updated: 2026-05-20 · Authored on apex · All IaC in `speddling/homelab` repo
+> Last updated: 2026-05-23 · Authored on apex · All IaC in `speddling/homelab` repo
 
 ---
 
@@ -44,6 +44,7 @@
 | `monolith.littlewolfacres.com` | 192.168.0.20 |
 | `navidrome.littlewolfacres.com` | 192.168.0.20 |
 | `argocd.littlewolfacres.com` | 192.168.0.20 |
+| `zombatron.littlewolfacres.com` | 192.168.0.20 |
 | `studio.littlewolfacres.com` | 192.168.0.109 |
 | `apex.littlewolfacres.com` | 192.168.0.19 |
 
@@ -228,6 +229,7 @@ Primary k3s worker node and household services platform. Hosts all Kubernetes wo
 |---|---|---|
 | k3s | Kubernetes (single-node cluster) | ✅ Running |
 | Navidrome | Music streaming — `navidrome.littlewolfacres.com` | ✅ Running |
+| Minecraft Bedrock | Family game server — `zombatron.littlewolfacres.com:30132` | ✅ Running |
 | Samba | File shares (vault, studio-archive, music-library) — passwords vaulted | ✅ Running |
 | node_exporter | Host metrics → Prometheus on Watchtower | ✅ Running |
 | Synapse | MCP server — AI tooling namespace | ✅ Running |
@@ -267,6 +269,7 @@ Primary k3s worker node and household services platform. Hosts all Kubernetes wo
 | 139 | TCP | Samba (NetBIOS) | LAN |
 | 445 | TCP | Samba | LAN |
 | 9100 | TCP | node_exporter | watchtower |
+| 30132 | UDP | Minecraft Bedrock (NodePort) | LAN |
 | 30800 | TCP | Synapse MCP server | apex only |
 | 30880 | TCP | ArgoCD NodePort fallback | LAN |
 | 30885 | TCP | ArgoCD app-controller metrics | watchtower |
@@ -360,6 +363,7 @@ certificates via Cloudflare DNS-01 challenge (no inbound port required).
 ### ClusterIssuers
 
 | Name | Endpoint | Use |
+|---|---|---|
 | `letsencrypt-prod` | acme-v02.api.letsencrypt.org | All production ingress resources |
 | `letsencrypt-staging` | acme-staging-v02.api.letsencrypt.org | Testing only — certs not browser-trusted |
 
@@ -438,13 +442,14 @@ Long-term AI platform. Not current plan — placeholder if the AI path continues
 | Service | Role | Port | Status |
 |---|---|---|---|
 | Scribe | MCP server — Claude's git control plane | 8765 | ✅ Running |
+| Zombatron Importer | Slack bot — Minecraft world import via `#zombatron` | Socket Mode (outbound) | ✅ Running |
 
 ### IaC
 
 | Layer | Tool | Location |
 |---|---|---|
 | Config | Ansible | `services/apex/ansible/` |
-| Pipeline | GitHub Actions | `.github/workflows/deploy-scribe.yml` |
+| Pipelines | GitHub Actions | `.github/workflows/deploy-scribe.yml`, `deploy-zombatron-importer.yml` |
 
 ---
 
@@ -531,6 +536,9 @@ gh workflow run deploy-watchtower.yml
 | ---- | -------- | ----- |
 | ArgoCD + cert-manager | ✅ Done | GitOps live, HTTPS working |
 | Navidrome ingress — upgrade to HTTPS | ✅ Done | websecure entrypoint + cert-manager annotation |
+| Minecraft Bedrock server | ✅ Done | NodePort 30132, ArgoCD-managed, Slack import via Zombatron Importer |
+| Minecraft — realm world import | Pending | Export from Realm → drop in `#zombatron` → cancel $8/month subscription |
+| Minecraft — automated PVC backups | Low | k8s CronJob to tarball `/data` nightly to `/mnt/hdd-c` |
 | Fileserver idempotency | Low | Fix `smbpasswd -a` in fileserver playbook — fails on re-run when user exists |
 | Loki — log aggregation | Low | Add to Watchtower stack |
 | Obelisk — client workspace on `/mnt/ssd-b` | Low | Isolated client environment, reserved name |
