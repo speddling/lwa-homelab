@@ -55,9 +55,12 @@ chore/*   Maintenance, dependency updates
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| `deploy-watchtower.yml` | Push to master | DNS, monitoring, exporters |
+| `deploy-watchtower.yml` | Push to master (`services/watchtower/**`) | DNS, monitoring, exporters |
 | `deploy-monolith.yml` | Push to master | Firewall, monitoring agents |
 | `deploy-fileserver.yml` | Manual | Samba config |
+| `deploy-zombatron-importer.yml` | Push to master (`services/apex/**`) | Zombatron Importer launchd service on apex |
+| `import-minecraft-world.yml` | Manual (`workflow_dispatch`, confirm: yes) | Stage world via Ansible + bounce pod |
+| `slack-minecraft-import.yml` | Zombatron Importer bot (GitHub API) | Clear import marker + bounce pod |
 | `bootstrap-argocd.yml` | Manual (once) | cert-manager + ArgoCD install |
 | `provision-k3s.yml` | Manual | k3s cluster init |
 
@@ -67,7 +70,7 @@ chore/*   Maintenance, dependency updates
 |---|---|---|---|
 | ArgoCD | monolith | https://argocd.littlewolfacres.com | ✅ Online |
 | Navidrome | monolith | https://navidrome.littlewolfacres.com | ✅ Online |
-| Minecraft server | monolith | UDP 19132 | ✅ Online |
+| Minecraft Bedrock | monolith | `zombatron.littlewolfacres.com:30132` (UDP) | ✅ Online |
 | Samba file share | monolith | — | ✅ Online |
 | hdd-d mirror | monolith | — nightly 02:00 | ✅ Online |
 | AdGuard Home + Unbound | watchtower | http://watchtower:3000 | ✅ Online |
@@ -78,6 +81,7 @@ chore/*   Maintenance, dependency updates
 | Synapse MCP | monolith | monolith:30800 | ✅ Online |
 | Scribe MCP | apex | apex:8765 | ✅ Online |
 | Argus MCP | watchtower | watchtower:9800 | ✅ Online |
+| Zombatron Importer | apex | Slack Socket Mode | ✅ Online |
 
 ## AI Tooling
 
@@ -101,6 +105,8 @@ See `docs/Claude MCPs.md` for full reference.
 
 - **Navidrome HTTPS** — upgrade ingress from HTTP to HTTPS now that cert-manager is live
 - **Loki** — log aggregation on watchtower
+- **Minecraft PVC backups** — nightly CronJob to tarball world data to `/mnt/hdd-c`
+- **Minecraft realm import** — export world from Realm, import via `#zombatron`, cancel $8/month subscription
 - **Lore** — dedicated AI inference node, Mac Mini M4 Pro 48GB / 10GbE, headless. Added when B-4 on apex is outgrown
 - **Data** — aspirational. Maxed Mac Studio, long-term AI platform. Not current plan
 - **Obelisk** — isolated client workspace on `/mnt/ssd-b`
