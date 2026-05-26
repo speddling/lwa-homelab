@@ -335,3 +335,60 @@ sudo systemctl restart argus
 | Read config files on Watchtower | Argus → `fs_read_file` / `fs_list_dir` |
 
 Synapse never touches git. Scribe never touches the cluster. Argus never writes anything.
+
+---
+
+## Kiro CLI — Native Alternative
+
+Kiro is an AI coding agent that runs directly in the terminal on apex. Unlike the MCP setup above, it requires no running servers, no config files, and no Claude Desktop — just `kiro` in any repo directory.
+
+```bash
+cd ~/homelab
+kiro
+```
+
+### What Kiro Does Natively
+
+| Capability | How |
+|---|---|
+| Read and edit files in the repo | Built-in filesystem tools — no Scribe needed |
+| Run shell commands (Ansible, gh, git) | Direct shell execution on apex |
+| SSH into monolith / watchtower | Via apex's existing SSH keys — same access as you |
+| Query AWS APIs | Native `use_aws` tool — no CLI wrapper needed |
+| Search and understand code | AST-aware code intelligence built in |
+| Branch, commit, push, open PRs | Shell + `gh` CLI — same as Scribe, no MCP server required |
+
+### Comparison to the MCP Stack
+
+| Task | MCP approach | Kiro approach |
+|---|---|---|
+| Check k3s pod state | Synapse → `k8s_get_pods` | `ssh monolith kubectl get pods -A` |
+| Query Prometheus | Synapse → `prom_query` | `ssh watchtower curl -s 'localhost:9090/api/v1/query?...'` |
+| Read journald logs | Argus → `journald_tail` | `ssh watchtower journalctl -u <unit> -n 50` |
+| Commit and open PR | Scribe → `git_*` tools | `git` + `gh` CLI directly on apex |
+| Edit homelab files | Claude filesystem MCP | Built-in file tools |
+
+The MCP servers add structured guardrails (branch protection, path allowlists, read-only enforcement) and work inside Claude Desktop's chat interface. Kiro trades those guardrails for flexibility — it can do anything apex can do, and asks before taking destructive actions.
+
+### When to Use Which
+
+- **Claude + MCPs** — conversational, long-running sessions in Claude Desktop where you want the structured tool interface and guardrails
+- **Kiro** — terminal-native work, AWS operations, tasks that need full shell access, or when you don't want to manage MCP server state
+
+### Installation
+
+```bash
+# Install
+npm install -g @aws/kiro-cli   # or via the Kiro installer
+
+# Launch in any repo
+cd ~/homelab
+kiro
+```
+
+### Notes
+
+- Kiro runs as `speddling` on apex — inherits all SSH keys, `gh` auth, AWS credentials, and Ansible vault access
+- No inbound ports required — Kiro is a local process, not a server
+- Context window usage shown in the TUI (`Auto X%`) — resets each session
+- Sessions can be saved/restored with `/chat save` and `/chat load`
