@@ -1,6 +1,7 @@
 [Unit]
 Description=Reolink NVR Prometheus Exporter
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple

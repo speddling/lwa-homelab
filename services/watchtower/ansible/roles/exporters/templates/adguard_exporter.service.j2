@@ -1,6 +1,7 @@
 [Unit]
 Description=AdGuard Home Exporter
-After=network.target AdGuardHome.service
+After=network-online.target
+Wants=network-online.target AdGuardHome.service
 
 [Service]
 Type=simple
