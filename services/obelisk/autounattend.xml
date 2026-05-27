@@ -176,6 +176,15 @@
               <PlainText>true</PlainText>
             </Password>
           </LocalAccount>
+          <LocalAccount wcm:action="add">
+            <Name>speddling</Name>
+            <DisplayName>speddling</DisplayName>
+            <Group>Administrators</Group>
+            <Password>
+              <Value>SPEDDLING_PASSWORD_PLACEHOLDER</Value>
+              <PlainText>true</PlainText>
+            </Password>
+          </LocalAccount>
         </LocalAccounts>
       </UserAccounts>
 
