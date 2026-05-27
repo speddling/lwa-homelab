@@ -46,11 +46,6 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y ansible genisoimage python3-yaml
           ansible-galaxy collection install community.general
-          # Install virtctl for CDI image upload
-          KUBEVIRT_VERSION=$(kubectl get kubevirt -n kubevirt -o jsonpath='{.items[0].status.observedKubeVirtVersion}' 2>/dev/null || echo "v1.4.0")
-          curl -sL -o /tmp/virtctl "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/virtctl-${KUBEVIRT_VERSION}-linux-amd64"
-          chmod +x /tmp/virtctl
-          sudo mv /tmp/virtctl /usr/local/bin/virtctl
 
       # ── Step 1: Install KubeVirt + CDI ────────────────────────────────────
 
@@ -122,42 +117,45 @@ jobs:
           shred -u /tmp/autounattend-iso/autounattend.xml
           rmdir /tmp/autounattend-iso
 
-      - name: Upload autounattend ISO as DataVolume
+      - name: Copy autounattend ISO to node and create PVC
         run: |
-          # Create a PVC on ssd-b to hold the autounattend ISO
-          kubectl apply -f - <<EOF
-          apiVersion: cdi.kubevirt.io/v1beta1
-          kind: DataVolume
+          # Runner runs on monolith — copy ISO directly to ssd-b
+          sudo mkdir -p /mnt/ssd-b/obelisk-autounattend
+          sudo cp /tmp/autounattend.iso /mnt/ssd-b/obelisk-autounattend/disk.img
+          sudo chmod 644 /mnt/ssd-b/obelisk-autounattend/disk.img
+          shred -u /tmp/autounattend.iso
+
+          # Create PV + PVC backed by the file we just copied
+          kubectl apply -f - <<'EOF'
+          apiVersion: v1
+          kind: PersistentVolume
+          metadata:
+            name: obelisk-autounattend-pv
+          spec:
+            capacity:
+              storage: 10Mi
+            accessModes:
+              - ReadWriteOnce
+            persistentVolumeReclaimPolicy: Retain
+            storageClassName: local-path-ssd-b
+            hostPath:
+              path: /mnt/ssd-b/obelisk-autounattend
+              type: Directory
+          ---
+          apiVersion: v1
+          kind: PersistentVolumeClaim
           metadata:
             name: obelisk-autounattend
             namespace: obelisk
-            annotations:
-              "cdi.kubevirt.io/storage.deleteAfterCompletion": "false"
           spec:
-            source:
-              upload: {}
-            pvc:
-              storageClassName: local-path-ssd-b
-              accessModes:
-                - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 10Mi
+            storageClassName: local-path-ssd-b
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 10Mi
+            volumeName: obelisk-autounattend-pv
           EOF
-
-          # Wait for upload proxy to be ready
-          kubectl wait --for=condition=Ready datavolume/obelisk-autounattend \
-            -n obelisk --timeout=60s 2>/dev/null || true
-
-          # Upload the ISO via CDI upload proxy
-          virtctl image-upload datavolume obelisk-autounattend \
-            --namespace obelisk \
-            --image-path /tmp/autounattend.iso \
-            --insecure \
-            --wait-secs=120
-
-          # Shred the ISO from runner disk
-          shred -u /tmp/autounattend.iso
 
       # ── Step 4: Provision Win11 ISO + disk ────────────────────────────────
 

@@ -109,8 +109,8 @@ spec:
             image: quay.io/kubevirt/virtio-container-disk:v0.59.0
         # autounattend ISO — uploaded by bootstrap-kubevirt.yml
         - name: autounattend
-          dataVolume:
-            name: obelisk-autounattend
+          persistentVolumeClaim:
+            claimName: obelisk-autounattend
 
 ---
 # RDP NodePort — exposes port 3389 on monolith as 33389
