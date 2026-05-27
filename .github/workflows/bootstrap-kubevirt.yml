@@ -44,9 +44,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ansible genisoimage python3-pip
+          sudo apt-get install -y ansible genisoimage python3-yaml
           ansible-galaxy collection install community.general
-          pip3 install ansible-vault --quiet
 
       # ── Step 1: Install KubeVirt + CDI ────────────────────────────────────
 
