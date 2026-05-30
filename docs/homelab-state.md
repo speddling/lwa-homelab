@@ -221,7 +221,7 @@ Primary k3s worker node and household services platform. Hosts all Kubernetes wo
 | Name | Status | Description |
 |---|---|---|
 | Synapse | ✅ Active | MCP/AI tooling namespace. Claude's interface to the homelab. See `docs/Claude MCPs.md` |
-| Obelisk | 🔜 Bootstrapping | KubeVirt Win11 VM on `/mnt/ssd-b` — client workspace, RDP via `obelisk.littlewolfacres.com:33389` |
+| Obelisk | ✅ Active | Windows 11 VM on `/mnt/ssd-b` — QEMU/KVM process, not KubeVirt. RDP: `192.168.0.20:33389`. See `docs/obelisk-runbook.md`. License: client-supplied. |
 
 ### Services
 
@@ -234,7 +234,7 @@ Primary k3s worker node and household services platform. Hosts all Kubernetes wo
 | node_exporter | Host metrics → Prometheus on Watchtower | ✅ Running |
 | Synapse | MCP server — AI tooling namespace | ✅ Running |
 | hdd-d mirror | Nightly rsync from hdd-c → hdd-d via systemd timer at 02:00 | ✅ Running |
-| Obelisk | KubeVirt Win11 VM — client workspace, RDP `:33389`, metrics `:39182` | 🔜 Bootstrapping |
+| Obelisk | QEMU/KVM Win11 VM — client workspace, RDP `192.168.0.20:33389` | ✅ Running |
 
 ### Samba Shares
 
@@ -584,17 +584,24 @@ gh workflow run deploy-watchtower.yml
 
 | Item | Priority | Notes |
 | ---- | -------- | ----- |
-| ArgoCD + cert-manager | ✅ Done | GitOps live, HTTPS working |
-| Navidrome ingress — upgrade to HTTPS | ✅ Done | websecure entrypoint + cert-manager annotation |
-| Minecraft Bedrock server | ✅ Done | NodePort 30132, ArgoCD-managed, Slack import via Zombatron Importer |
 | Minecraft — realm world import | Pending | Export from Realm → drop in `#zombatron` → cancel $8/month subscription |
 | Minecraft — automated PVC backups | Low | k8s CronJob to tarball `/data` nightly to `/mnt/hdd-c` |
 | Fileserver idempotency | Low | Fix `smbpasswd -a` in fileserver playbook — fails on re-run when user exists |
 | Loki — log aggregation | Low | Add to Watchtower stack |
-| Obelisk — client workspace on `/mnt/ssd-b` | 🔜 Bootstrapping | KubeVirt Win11 VM. Run `bootstrap-kubevirt.yml` workflow, then set `running:true` after ISO install. RDP: `obelisk.littlewolfacres.com:33389`. License: client-supplied. |
 | Synapse — health endpoint | Low | Add /health route to FastMCP app for proper k8s probes |
-| Watchtower service units — network-online.target | ✅ Done | All monitoring service units updated to wait for IP before starting — fixes post-power-loss crash |
 | Healthchecks.io dead-man's switch | Pending | Code deployed — add `vault_healthchecks_daily_summary_url` to vault.yml with ping URL from healthchecks.io (period: 12h, grace: 1h) |
+
+### GitHub PAT Audit
+
+One PAT per repo, one PAT per role. Review and rotate quarterly alongside ArgoCD credentials.
+
+| Token Name | Repo | Role | Scope | Notes |
+|---|---|---|---|---|
+| `argocd-homelab-reader` | `homelab` | ArgoCD repo auth | Contents: read | Rotated quarterly via `rotate-argocd-credentials.yml` |
+| `homelab-action-dispatch` | `homelab` | GitHub Actions | TBD | Audit scope |
+| `lwa-web-scribe` | `lwa-web` | Scribe MCP git ops | Contents r/w, PRs r/w, Metadata r | Added May 2026 — account-wide gh CLI credential, scope to repo only on next rotation |
+
+**TODO:** `lwa-web-scribe` is currently stored as account-wide gh CLI credential in macOS keychain. Scope it to `lwa-web` only on next quarterly rotation. Also create `lwa-web-deploy` PAT for GitHub Actions SFTP deploy workflow when that pipeline is built.
 
 ---
 
