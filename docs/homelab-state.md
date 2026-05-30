@@ -596,6 +596,18 @@ gh workflow run deploy-watchtower.yml
 | Watchtower service units — network-online.target | ✅ Done | All monitoring service units updated to wait for IP before starting — fixes post-power-loss crash |
 | Healthchecks.io dead-man's switch | Pending | Code deployed — add `vault_healthchecks_daily_summary_url` to vault.yml with ping URL from healthchecks.io (period: 12h, grace: 1h) |
 
+### GitHub PAT Audit
+
+One PAT per repo, one PAT per role. Review and rotate quarterly alongside ArgoCD credentials.
+
+| Token Name | Repo | Role | Scope | Notes |
+|---|---|---|---|---|
+| `argocd-homelab-reader` | `homelab` | ArgoCD repo auth | Contents: read | Rotated quarterly via `rotate-argocd-credentials.yml` |
+| `homelab-action-dispatch` | `homelab` | GitHub Actions | TBD | Audit scope |
+| `lwa-web-scribe` | `lwa-web` | Scribe MCP git ops | Contents r/w, PRs r/w, Metadata r | Added May 2026 — account-wide gh CLI credential, scope to repo only on next rotation |
+
+**TODO:** `lwa-web-scribe` is currently stored as account-wide gh CLI credential in macOS keychain. Scope it to `lwa-web` only on next quarterly rotation. Also create `lwa-web-deploy` PAT for GitHub Actions SFTP deploy workflow when that pipeline is built.
+
 ---
 
 ## Post-Watchtower Cleanup
