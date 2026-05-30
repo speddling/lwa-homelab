@@ -219,6 +219,27 @@ tail -f ~/Library/Logs/scribe.log
 curl http://localhost:8765/mcp
 ```
 
+### Mandatory Pre-Flight — Before Any Git Operation
+
+Claude **must** run `git_status` on the target repo before any git operation, every time, without exception. No assumptions about current state.
+
+**The rule:** Check first, act second.
+
+1. `git_status` — what branch am I on? Is the working tree clean? Is there an open PR?
+2. If on `main`/`master` and work is needed → `git_sync` first, then `git_branch`
+3. If on a feature branch → check if a PR already exists before opening a new one
+4. If ahead of origin → push before opening a PR
+5. After the human says **"merged"** (that word specifically) → `git_sync` immediately, without being asked
+
+**Session start:** Run `git_status` on any repo that will be touched before doing anything else. No exceptions, even if the session feels like a continuation.
+
+**Never:**
+- Assume the repo is clean or on the right branch
+- Open a PR without checking if one already exists for the current branch
+- Leave local main behind after a merge
+- Hand the human a raw git command as a workaround — if Scribe can't do it, say so clearly and explain why. Do not give paste-and-run blobs that bypass this workflow.
+- Sync or assume a merge happened unless the human has said the word **"merged"**
+
 ### Typical Workflow
 
 1. Claude reads the repo via the filesystem MCP
