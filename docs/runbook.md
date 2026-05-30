@@ -362,21 +362,18 @@ ansible-vault view group_vars/all/vault.yml \
 
 Apex is a workstation with no inbound SSH — GitHub Actions cannot deploy to it.
 All apex services (Scribe, Zombatron Importer) are deployed manually from apex itself.
+Run from `services/apex/ansible/` so `ansible.cfg` is picked up correctly.
 
 ```bash
 # Scribe
-cd ~/homelab
-ansible-playbook \
-  --vault-password-file .vault_pass \
-  -i services/apex/ansible/inventory.ini \
-  services/apex/ansible/playbooks/scribe.yml
+cd ~/homelab/services/apex/ansible
+ansible-playbook --vault-password-file ~/homelab/.vault_pass \
+  -i inventory.ini playbooks/scribe.yml
 
 # Zombatron Importer
-cd ~/homelab
-ansible-playbook \
-  --vault-password-file .vault_pass \
-  -i services/apex/ansible/inventory.ini \
-  services/apex/ansible/playbooks/deploy-zombatron-importer.yml
+cd ~/homelab/services/apex/ansible
+ansible-playbook --vault-password-file ~/homelab/.vault_pass \
+  -i inventory.ini playbooks/deploy-zombatron-importer.yml
 ```
 
 ### Monolith
