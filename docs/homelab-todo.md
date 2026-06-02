@@ -40,3 +40,13 @@ One PAT per repo, one PAT per role. Review and rotate quarterly alongside ArgoCD
 - `lwa-web-scribe` is account-wide — scope it to `lwa-web` only on next rotation
 - Create `lwa-web-deploy` PAT for GitHub Actions SFTP deploy workflow when that pipeline is built
 - Audit `homelab-action-dispatch` scope — confirm minimum permissions and document
+
+---
+
+## Incidents & Follow-up
+
+| Date | Symptom | Fix | Tag |
+|---|---|---|---|
+| 2026-05-31 | iPad — YouTube pages loaded but video would not play, on LAN only. Both native app and Safari affected. Other devices (Android, Apex) unaffected. | AdGuard blocklist update had blocked `googlevideo.com` (YouTube's primary video CDN). Whitelisted via custom rule: `@@||googlevideo.com^` | `#adguard` `#blocklist` `#youtube` `#cdn` `#todo-research` |
+
+> **TODO (research):** Identify which filter list flagged `googlevideo.com` and whether it's a recurring false-positive. Consider swapping for a less aggressive list or making `googlevideo.com` a permanent custom allowlist entry. Diagnostic pattern: page loads fine but media won't play → check AdGuard query log filtered by client IP for red (blocked) entries.
