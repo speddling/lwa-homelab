@@ -19,7 +19,9 @@ Work that can be done while the existing flat network keeps running.
 - [ ] Pre-create static reservations for known IPs:
   - `.30.10` monolith, `.30.11` watchtower, `.30.12` Obelisk
   - `.40.10` Big Brother, `.40.11–.12` Reolinks, `.40.20` printer
-  - `.10.1–.5` infrastructure (controller will mostly auto-assign these via Omada discovery)
+  - `.10.1–.6` infrastructure including the future `.10.6` Balcony AP (controller will mostly auto-assign these via Omada discovery)
+- [ ] Pre-stage the EAP245 rename in OC200: Foyer → **Downstairs Hall**, Yarn Studio → **Upstairs Hall**
+- [ ] Plan the physical relocation of the Upstairs Hall EAP245 (formerly Yarn Studio) to its new mounting location upstairs near daughter's bedroom — can be done before or after cutover, independent of the VLAN work
 - [ ] Pre-create new SSIDs (`LittleWolfAcres-IoT`, `LittleWolfAcres-Guest`) mapped to their VLANs, marked **disabled**
 - [ ] Plan to retain the existing `LittleWolfAcres` SSID name on the new LAN VLAN — family devices reconnect transparently
 
@@ -46,7 +48,7 @@ Work that can be done while the existing flat network keeps running.
 
 - [ ] Confirm 30-minute warning channel for the family (text? in-person? sign on the closet door?)
 - [ ] Pick the maintenance window — late evening or weekend morning, low usage
-- [ ] Keep apex on WiFi *and* docked Ethernet during cutover so a network blip doesn't kill the admin session
+- [ ] Have a monitor and keyboard at watchtower for wired recovery access during cutover — apex is WiFi-only, so if WiFi reconnection has any hiccup, watchtower is the wired admin path
 
 ---
 
@@ -131,11 +133,12 @@ Per-VLAN smoke test. Don't skip any of these.
 
 - [ ] Disable VLAN 1 on all switch ports (replaced by VLAN 999 as the native blackhole)
 - [ ] Confirm unused ports (port 16, both SFPs) are administratively shut down
+- [ ] Confirm port 10 is configured as Access/VLAN 40 (IoT) with PoE on, but disabled until the chicken-run/coop cable is pulled
 - [ ] Land the IaC PR with all `192.168.0.x` → new subnet replacements
 - [ ] Update `docs/network.md` static IP table with the new VLAN layout
 - [ ] Update `docs/homelab-state.md` to reflect the new addressing
 - [ ] Take a fresh OC200 config backup as the new baseline
-- [ ] Decommission the TL-SG1210P or label it as cold spare
+- [ ] Decommission the TL-SG1210P or label it as cold spare for the SG2218P
 - [ ] Capture daughter's Chromebook MAC after first connection to the Guest SSID; add as a DHCP reservation in OC200
 
 ---
@@ -160,6 +163,9 @@ Static-IP devices that were changed in Phase 3 step 4 need to be reverted to the
 
 Tracked separately from this runbook:
 
+- **EAP225-Outdoor — Balcony install:** mount above the master suite balcony slider, run outdoor cable through the duct chase from the basement, add inline Ethernet surge protector at the basement entry, plug into switch port 14, AP self-adopts to `.10.6`
+- **Future front-east AP** (orchard coverage): same install pattern through the chimney facade chase, second EAP225-Outdoor when the orchard is in
+- **Chicken-run/coop cable:** pulled when the power-to-coop project happens, terminated in a weatherproof junction box at the coop end, lands on switch port 10
 - WireGuard configuration on the ER605
 - Reverse proxy or Cloudflare Tunnel for any externally-exposed services
 - Mermaid topology diagram (`docs/network-topology.md`)

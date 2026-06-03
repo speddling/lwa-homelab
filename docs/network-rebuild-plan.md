@@ -45,7 +45,11 @@ ER605 v2.0 retained. Continues handling WAN, DHCP, inter-VLAN routing, and all f
 
 ### APs
 
-EAP245 Foyer and EAP245 Yarn Studio (both v3.0) retained.
+Three APs total:
+
+- **EAP245 — Downstairs Hall** (v3.0, indoor ceiling/wall mount, previously labeled Foyer)
+- **EAP245 — Upstairs Hall** (v3.0, indoor ceiling/wall mount, previously labeled Yarn Studio — relocated upstairs for second-floor coverage near daughter's bedroom)
+- **EAP225-Outdoor — Balcony** (v3, IP65 weatherproof, mounted above the master suite balcony slider on the back-NW corner of the house). Wi-Fi 5 AC1200, 802.3af PoE, detachable omnidirectional antennas. Selected over Wi-Fi 6 outdoor alternatives because the marginal benefit doesn't justify the price delta given the SG2218P is 1 Gbps and outdoor use cases don't have density problems.
 
 ---
 
@@ -84,8 +88,9 @@ Guest VLAN uses `.50–.200` for DHCP (more dynamic capacity, less static need).
 | .10.1 | ER605 management interface |
 | .10.2 | SG2218P |
 | .10.3 | OC200 |
-| .10.4 | EAP245 Foyer |
-| .10.5 | EAP245 Yarn Studio |
+| .10.4 | EAP245 — Downstairs Hall |
+| .10.5 | EAP245 — Upstairs Hall |
+| .10.6 | EAP225-Outdoor — Balcony |
 
 ### Homelab (192.168.30.0/24)
 
@@ -108,7 +113,7 @@ Guest VLAN uses `.50–.200` for DHCP (more dynamic capacity, less static need).
 
 ### LAN (192.168.20.0/24)
 
-Pure DHCP. Optional reservation for apex if predictable RDP-source filtering is needed.
+Pure DHCP. All LAN-class devices are wireless — no wired clients on this VLAN today (apex is WiFi-only; watchtower with a monitor and keyboard is the wired admin/recovery path). Optional DHCP reservation for apex if you ever want predictable RDP-source filtering.
 
 ### Guest (192.168.50.0/24)
 
@@ -131,11 +136,11 @@ SG2218P, 16× 1G PoE+ ports + 2× SFP slots.
 | 7 | Big Brother NVR | Access | 40 | — | off *(wall powered)* |
 | 8 | Reolink cam #1 | Access | 40 | — | **PoE+ on** |
 | 9 | Reolink cam #2 | Access | 40 | — | **PoE+ on** |
-| 10 | spare — IoT | Access | 40 | — | on |
+| 10 | reserved — Chicken run/coop | Access | 40 | — | on *(ready for future outdoor PoE device at the coop)* |
 | 11 | OC200 | Access | 10 | — | **PoE on** |
-| 12 | EAP245 Foyer | Trunk | 10 | 20, 40, 50 | **PoE+ on** |
-| 13 | EAP245 Yarn Studio | Trunk | 10 | 20, 40, 50 | **PoE+ on** |
-| 14 | apex (when docked) | Access | 20 | — | off |
+| 12 | EAP245 — Downstairs Hall | Trunk | 10 | 20, 40, 50 | **PoE+ on** |
+| 13 | EAP245 — Upstairs Hall | Trunk | 10 | 20, 40, 50 | **PoE+ on** |
+| 14 | EAP225-Outdoor — Balcony | Trunk | 10 | 20, 40, 50 | **PoE on** *(802.3af)* |
 | 15 | spare — LAN | Access | 20 | — | off |
 | 16 | unused | **shutdown** | — | — | off |
 | SFP1 | reserved | — | — | — | n/a |
@@ -144,7 +149,10 @@ SG2218P, 16× 1G PoE+ ports + 2× SFP slots.
 **Trunk semantics:**
 - Port 1 (ER605 uplink) carries all five active VLANs tagged; native VLAN 999 drops any stray untagged frames.
 - Port 2 (monolith) is a trunk with native = Homelab so the host interface sees untagged Homelab traffic as expected. Additional VLAN tags added later if VMs need to live on other segments.
-- Ports 12 & 13 (APs) have native = Management so the APs reach the OC200 untagged. The three tagged VLANs carry the wireless SSIDs.
+- Ports 12, 13, & 14 (APs) have native = Management so the APs reach the OC200 untagged. The three tagged VLANs carry the wireless SSIDs (LAN, IoT, Guest).
+- Port 10 is **reserved** for the future chicken-run/coop cable. Cable terminates in a weatherproof junction box at the coop end and stays unused until needed; the port is pre-configured for IoT VLAN so a future camera, outdoor AP, or sensor hub can plug in without reconfiguring the switch.
+
+**PoE budget:** ~59W active draw of 150W. Reserved capacity (port 10 chicken run) leaves ample headroom for future outdoor PoE devices.
 
 **Unused ports** are administratively shut down. No accidental plug-ins gain network access.
 
@@ -212,7 +220,7 @@ Default deny everything else. Management devices initiate nowhere internal.
 
 No Homelab SSID — Homelab is wired-only by design.
 
-Both APs broadcast all three SSIDs (band steering and roaming handled by Omada).
+All three APs (Downstairs Hall, Upstairs Hall, Balcony) broadcast all three SSIDs. Band steering and roaming between APs handled by Omada.
 
 ---
 
