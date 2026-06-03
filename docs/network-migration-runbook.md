@@ -48,7 +48,7 @@ Work that can be done while the existing flat network keeps running.
 
 - [ ] Confirm 30-minute warning channel for the family (text? in-person? sign on the closet door?)
 - [ ] Pick the maintenance window — late evening or weekend morning, low usage
-- [ ] Keep apex on WiFi *and* docked Ethernet during cutover so a network blip doesn't kill the admin session
+- [ ] Have a monitor and keyboard at watchtower for wired recovery access during cutover — apex is WiFi-only, so if WiFi reconnection has any hiccup, watchtower is the wired admin path
 
 ---
 

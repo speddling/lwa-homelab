@@ -113,7 +113,7 @@ Guest VLAN uses `.50–.200` for DHCP (more dynamic capacity, less static need).
 
 ### LAN (192.168.20.0/24)
 
-Pure DHCP. Optional reservation for apex if predictable RDP-source filtering is needed.
+Pure DHCP. All LAN-class devices are wireless — no wired clients on this VLAN today (apex is WiFi-only; watchtower with a monitor and keyboard is the wired admin/recovery path). Optional DHCP reservation for apex if you ever want predictable RDP-source filtering.
 
 ### Guest (192.168.50.0/24)
 
@@ -141,7 +141,7 @@ SG2218P, 16× 1G PoE+ ports + 2× SFP slots.
 | 12 | EAP245 — Downstairs Hall | Trunk | 10 | 20, 40, 50 | **PoE+ on** |
 | 13 | EAP245 — Upstairs Hall | Trunk | 10 | 20, 40, 50 | **PoE+ on** |
 | 14 | EAP225-Outdoor — Balcony | Trunk | 10 | 20, 40, 50 | **PoE on** *(802.3af)* |
-| 15 | apex (when docked) | Access | 20 | — | off |
+| 15 | spare — LAN | Access | 20 | — | off |
 | 16 | unused | **shutdown** | — | — | off |
 | SFP1 | reserved | — | — | — | n/a |
 | SFP2 | reserved | — | — | — | n/a |
