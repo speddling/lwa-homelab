@@ -8,6 +8,16 @@ route:
   group_interval: {{ alertmanager_group_interval }}
   repeat_interval: {{ alertmanager_repeat_interval }}
   receiver: sentinel
+  routes:
+    # Dead man's switch — routed separately with a short repeat so
+    # healthchecks.io receives a ping every 5 minutes. If pings stop,
+    # healthchecks.io alerts via email regardless of Slack/WAN state.
+    - matchers:
+        - alertname = "DeadManSwitch"
+      receiver: watchdog
+      group_wait: 0s
+      group_interval: 5m
+      repeat_interval: 5m
 
 receivers:
   - name: sentinel
@@ -16,13 +26,29 @@ receivers:
         username: '{{ alertmanager_slack_username }}'
         icon_emoji: '{{ alertmanager_slack_icon }}'
         send_resolved: true
-        title: '{{ "{{" }} if eq .Status "firing" {{ "}}" }}🔴 {{ "{{" }} else {{ "}}" }}✅ {{ "{{" }} end {{ "}}" }}{{ "{{" }} .CommonLabels.alertname {{ "}}" }}'
+        color: '{{ "{{" }} if eq .Status "firing" {{ "}}" }}danger{{ "{{" }} else {{ "}}" }}good{{ "{{" }} end {{ "}}" }}'
+        title: '{{ "{{" }} if eq .Status "firing" {{ "}}" }}🔴 {{ "{{" }} else {{ "}}" }}🟢 RECOVERED — {{ "{{" }} end {{ "}}" }}{{ "{{" }} .CommonLabels.alertname {{ "}}" }}'
         text: |
-          {{ "{{" }} range .Alerts {{ "}}" }}
-          *Status:* {{ "{{" }} .Status | toUpper {{ "}}" }}
+          {{ "{{" }} range .Alerts {{ "}}" -}}
+          *Host:* {{ "{{" }} .Labels.host | default "unknown" {{ "}}" }}   *Severity:* {{ "{{" }} .Labels.severity {{ "}}" }}
+          {{ "{{" }}- if eq .Status "firing" {{ "}}" }}
           *Description:* {{ "{{" }} .Annotations.description {{ "}}" }}
-          *Severity:* {{ "{{" }} .Labels.severity {{ "}}" }}
+          *Fired at:* {{ "{{" }} .StartsAt.Format "Jan 2, 3:04 PM MST" {{ "}}" }}
+          {{ "{{" }}- else {{ "}}" }}
+          *This alert has recovered.* The condition is no longer active.
+          *Description:* {{ "{{" }} .Annotations.description {{ "}}" }}
+          *Outage started:* {{ "{{" }} .StartsAt.Format "Jan 2, 3:04 PM MST" {{ "}}" }}
+          *Recovered at:* {{ "{{" }} .EndsAt.Format "Jan 2, 3:04 PM MST" {{ "}}" }}
+          {{ "{{" }}- end {{ "}}" }}
           {{ "{{" }} end {{ "}}" }}
+
+  # Watchdog receiver — pings healthchecks.io on every repeat (5 min).
+  # send_resolved: false because the DeadManSwitch never resolves in
+  # normal operation; we only want the recurring ping, not a recovery notice.
+  - name: watchdog
+    webhook_configs:
+      - url: '{{ vault_healthchecks_watchdog_url }}'
+        send_resolved: false
 
 inhibit_rules:
   # Suppress warnings when a critical fires for the same rule
