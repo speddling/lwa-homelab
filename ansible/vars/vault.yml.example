@@ -64,6 +64,12 @@ vault_speddling_obelisk_password: "REPLACE_ME"
 # Paste the ping URL here (https://hc-ping.com/<uuid>)
 vault_healthchecks_daily_summary_url: "https://hc-ping.com/REPLACE_ME"
 
+# Healthchecks.io — dead-man's switch for Alertmanager (Watchtower heartbeat)
+# Create a SEPARATE check at healthchecks.io: period=5m, grace=15m
+# If pings stop, healthchecks.io emails you regardless of Slack/WAN state.
+# Paste the ping URL here (https://hc-ping.com/<uuid>)
+vault_healthchecks_watchdog_url: "https://hc-ping.com/REPLACE_ME"
+
 # GitHub — Fine-grained PAT for Zombatron Importer workflow dispatch
 # Scopes: Actions: Read & Write (single repo: speddling/lwa-homelab)
 vault_github_actions_pat: "github_pat_REPLACE_ME"

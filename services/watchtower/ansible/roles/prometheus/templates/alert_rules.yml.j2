@@ -180,6 +180,20 @@ groups:
         annotations:
           description: "ArgoCD server is unreachable — UI and API unavailable at argocd.littlewolfacres.com"
 
+      # ── Dead man's switch ──────────────────────────────────────────────────────────
+      # Always-firing alert routed to healthchecks.io via the watchdog receiver.
+      # If Alertmanager goes dark (power outage, crash), pings stop and
+      # healthchecks.io sends an email independently of Slack or WAN state.
+      # Create check at healthchecks.io: period=5m, grace=15m
+      # Add the ping URL to vault as vault_healthchecks_watchdog_url.
+
+      - alert: DeadManSwitch
+        expr: vector(1)
+        labels:
+          severity: none
+        annotations:
+          description: "Alertmanager is alive and pinging healthchecks.io. If this stops, the monitoring stack is offline."
+
       # ── WAN / Connectivity ───────────────────────────────────────────────────────
 
       - alert: WANDown
