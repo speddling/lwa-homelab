@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: navidrome
-          image: deluan/navidrome:latest
+          image: deluan/navidrome:0.53.3  # <-- Change from :latest to a specific version
           envFrom:
             - configMapRef:
                 name: navidrome-config
