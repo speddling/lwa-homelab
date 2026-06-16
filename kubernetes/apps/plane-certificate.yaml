@@ -1,0 +1,26 @@
+# Explicit cert-manager Certificate for Plane.
+#
+# Why this exists as a standalone resource rather than relying on the
+# cert-manager.io/cluster-issuer annotation: cert-manager's ingress-shim
+# only watches standard Kubernetes Ingress objects for that annotation.
+# The plane-ce chart generates a Traefik-native IngressRoute instead —
+# a different CRD entirely — which ingress-shim never sees. The
+# annotation we set on the IngressRoute via Helm values accomplished
+# nothing; no Certificate was ever requested, and plane-tls fell back
+# to a self-signed cert (hence the browser's "Not Secure" warning).
+#
+# Applied directly by bootstrap-plane.yml via kubectl, not by ArgoCD's
+# Helm source — the plane Application's source is a remote chart only,
+# with no local path component to add a sibling manifest to.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: plane-tls
+  namespace: plane
+spec:
+  secretName: plane-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - plane.littlewolfacres.com
