@@ -73,3 +73,10 @@ vault_healthchecks_watchdog_url: "https://hc-ping.com/REPLACE_ME"
 # GitHub — Fine-grained PAT for Zombatron Importer workflow dispatch
 # Scopes: Actions: Read & Write (single repo: speddling/lwa-homelab)
 vault_github_actions_pat: "github_pat_REPLACE_ME"
+
+# Plane (self-hosted project tracker) — no Ansible Vault entries needed.
+# All of Plane's runtime secrets (Postgres, RabbitMQ, MinIO, app SECRET_KEY)
+# are generated fresh by .github/workflows/bootstrap-plane.yml and exist
+# only as Kubernetes Secret objects in the plane namespace. Re-run that
+# workflow to generate new ones if the namespace is ever rebuilt —
+# there's no prior value to recover from this vault.
