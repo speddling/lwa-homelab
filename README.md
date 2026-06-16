@@ -71,8 +71,8 @@ GitHub Actions pipelines on self-hosted runners (monolith, watchtower). All chan
 | Prometheus | watchtower | http://watchtower:9090 | ✅ Online |
 | Grafana | watchtower | http://grafana.littlewolfacres.com:3001 | ✅ Online |
 | Alertmanager | watchtower | http://watchtower:9093 | ✅ Online |
-| Loki | watchtower | http://watchtower:3100 | 🟡 Deploying |
-| Promtail | watchtower | http://watchtower:9080 | 🟡 Deploying |
+| Loki | watchtower | http://watchtower:3100 | ✅ Online |
+| Promtail | watchtower | http://watchtower:9080 | ✅ Online |
 | Netdata | watchtower | http://watchtower:19999 | ✅ Online |
 | Synapse MCP | monolith | monolith:30800 | ✅ Online |
 | Scribe MCP | apex | apex:8765 | ✅ Online |
@@ -101,7 +101,6 @@ See `docs/Claude MCPs.md` for full reference.
 | UPS — CyberPower CP1500PFCLCD (NUT role ready, `nut_enabled` flag flip away) — arriving this week | High |
 | SG2218P — 16-port PoE+ managed switch — arriving this week | High |
 | VLAN migration — design + runbook complete (`docs/network-rebuild-plan.md`), cutover pending switch arrival | High |
-| Loki + Promtail — log aggregation roles built, deploy in progress | High |
 | EAP225-Outdoor — Balcony AP — arriving this week | Medium |
 | AT&T Internet Air — evaluating as a load-balanced WAN2 on a separate network from T-Mobile | Medium |
 | Minecraft — realm world import + cancel subscription | Medium |
