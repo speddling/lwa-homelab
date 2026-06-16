@@ -82,7 +82,9 @@ Always-on DNS resolver and full-stack monitoring node. Never runs workloads. See
 
 | Service | Role | Port | Status |
 |---|---|---|---|
-| Alertmanager | Alert routing → Slack #sentinel | 9093 | ✅ Running |
+| Alertmanager | Alert routing → Slack #sentinel + healthchecks.io watchdog | 9093 | ✅ Running |
+| Loki | Log aggregation, 60d retention | 3100 | ✅ Running |
+| Promtail | Log shipper — journal + ER605 syslog (not yet wired) | 9080 | ✅ Running |
 | Unbound | Recursive DNS resolver (upstream) | 5335 | ✅ Running |
 | AdGuard Home | DNS frontend, ad/tracker filtering | 53, 3000 | ✅ Running |
 | Prometheus | Metrics scraping + alert evaluation | 9090 | ✅ Running |
@@ -111,6 +113,8 @@ Always-on DNS resolver and full-stack monitoring node. Never runs workloads. See
 |---|---|---|
 | watchtower | localhost:9100 | ✅ Up |
 | prometheus | localhost:9090 | ✅ Up |
+| loki | localhost:3100 | ✅ Up |
+| promtail | localhost:9080 | ✅ Up |
 | blackbox | localhost:9115 | ✅ Up |
 | adguard | localhost:9618 | ✅ Up |
 | monolith | monolith:9100 | ✅ Up |
@@ -151,10 +155,22 @@ Alerting is owned by **Prometheus + Alertmanager**. Grafana is display-only.
 | MonolithLowDiskHddD | > 80% used on /mnt/hdd-d | monolith |
 | WatchtowerHighCPU | > 85% sustained 5m | watchtower |
 | WatchtowerHighMemory | > 85% sustained 5m | watchtower |
-| WatchtowerLowDisk | > 80% used | watchtower |
+| WatchtowerLowDisk | > 80% used, 10m | watchtower |
+| WatchtowerCriticalDisk | > 90% used, 5m | watchtower |
+| WatchtowerPrometheusDown | Scrape fails > 2m | watchtower |
 | WatchtowerPrometheusTSDB | TSDB blocks > 8 GB (80% of 10 GB retention limit) | watchtower |
 | WatchtowerNodeExporterDown | Scrape fails > 1m | watchtower |
-| DailySummary | Always firing — canary for pipeline health | all |
+| AdGuardHomeDown | Scrape fails > 1m | watchtower |
+| WANDown | ICMP probe to 1.1.1.1 fails > 3m | watchtower |
+| TMobileExporterDown | Scrape fails > 2m | watchtower |
+| TMobile4GSignalWeak | 4G RSRP < -110 dBm, 10m | watchtower |
+| TMobile5GSignalWeak | 5G RSRP < -110 dBm, 10m | watchtower |
+| DeadManSwitch | Always firing — routed to healthchecks.io watchdog (separate from Slack), confirms Alertmanager itself is alive | all |
+
+> The previous "DailySummary always-firing canary" entry in this table never actually
+> existed as a deployed alert — `DeadManSwitch` above is the real implementation of that
+> idea, added June 2026. The Python daily-summary script (8am/8pm digest) is a separate,
+> independent mechanism — see `docs/daily-summary.md`.
 
 ### UFW Rules
 
@@ -201,7 +217,7 @@ Alerting is owned by **Prometheus + Alertmanager**. Grafana is display-only.
 | | 3.6 TB HDD — Seagate ST4000DM004 — `/mnt/hdd-c` — music library / fileserver / bulk storage |
 | | 1.8 TB HDD — Hitachi HUA72202 — `/mnt/hdd-d` — mirror of hdd-c |
 
-> **RAM upgrade pending:** 2×16 GB DDR4-3200 to bring total to 64 GB — approximately 2 weeks out.
+> **RAM upgrade:** 2×16 GB DDR4-3200 to bring total to 64 GB — ordered, arriving this week.
 
 ### Role
 

@@ -1,6 +1,6 @@
 # Monitoring Runbook — Little Wolf Acres
-> Reference for the full observability stack: Prometheus, Grafana, Alertmanager, exporters, and the daily Slack summary.
-> Last updated: 2026-05-18
+> Reference for the full observability stack: Prometheus, Grafana, Alertmanager, Loki, Promtail, exporters, and the daily Slack summary.
+> Last updated: 2026-06-16
 
 ---
 
@@ -12,7 +12,9 @@ There are no monitoring pods in k3s — Prometheus scrapes Monolith's node_expor
 ```
 Watchtower (192.168.0.21)
 ├── prometheus          :9090   — metrics store & alert evaluation
-├── alertmanager        :9093   — alert routing → Slack #sentinel
+├── alertmanager        :9093   — alert routing → Slack #sentinel + healthchecks.io watchdog
+├── loki                :3100   — log aggregation, 60d retention, filesystem storage
+├── promtail            :9080   — log shipper: Watchtower journal + ER605 syslog (:1514)
 ├── grafana-server      :3001   — dashboards (grafana.littlewolfacres.com)
 ├── node_exporter       :9100   — Watchtower host metrics
 ├── blackbox_exporter   :9115   — HTTP/ICMP probing
@@ -23,9 +25,17 @@ Watchtower (192.168.0.21)
 └── daily-summary       timer   — 8 AM + 8 PM Slack digest
 
 Monolith (192.168.0.20 / monolith.littlewolfacres.com)
-├── node_exporter       :9100   — Monolith host metrics (scraped remotely)
-└── kube-state-metrics  :30900  — k3s object state metrics (NodePort)
+├── node_exporter             :9100   — Monolith host metrics (scraped remotely)
+├── kube-state-metrics        :30900  — k3s object state metrics (NodePort)
+├── argocd-application-controller :30885 — ArgoCD reconciliation metrics (NodePort)
+├── argocd-server              :30883 — ArgoCD API/UI metrics (NodePort)
+└── windows_exporter (Obelisk) :39182 — Win11 VM host metrics (NodePort, only up while VM is running)
 ```
+
+> **Promtail depends on a healthy journal.** It reads Watchtower's systemd journal directly
+> (`journalctl`-equivalent access via the `journal` scrape config). If the active journal is
+> corrupted — most commonly after a dirty power loss — Promtail's reads can fail or skip
+> entries from before the corruption point. See **Journald Health** below.
 
 ---
 
@@ -46,6 +56,16 @@ Monolith (192.168.0.20 / monolith.littlewolfacres.com)
 | `tmobile` | `localhost:9719` | Gateway signal, band, uptime |
 | `reolink_nvr` | `localhost:9720` | NVR up, device info, channel online, HDD usage |
 | `kube-state-metrics` | `monolith.littlewolfacres.com:30900` | k3s pod, deployment, PVC, namespace state |
+| `argocd-app-controller` | `monolith.littlewolfacres.com:30885` → labelled `instance=argocd` | ArgoCD reconciliation, sync status, app health |
+| `argocd-server` | `monolith.littlewolfacres.com:30883` → labelled `instance=argocd` | ArgoCD API/UI availability and latency |
+| `obelisk` | `monolith.littlewolfacres.com:39182` → labelled `instance=obelisk` | Win11 VM host metrics — scrape failures expected when the VM is off |
+| `loki` | `localhost:3100` → relabeled `instance=watchtower` | Loki ingestion rate, chunk store size, query performance |
+| `promtail` | `localhost:9080` → relabeled `instance=watchtower` | Promtail scrape lag, log line throughput |
+
+> **WAN2 placeholder:** a commented `snmp-att-cgw450` job exists in `prometheus.yml.j2` for when
+> AT&T Internet Air is installed. The CGW450 gateway has no unauthenticated local API like the
+> T-Mobile FAST 5688W does — SNMP via the ER605-side interface is the only practical option.
+> Uncomment and set `ip_att_gateway` in `ansible/vars/main.yml` when that WAN lands.
 
 > **Instance label convention:** Prometheus relabels both node_exporter scrapes so
 > `instance` is a clean hostname (`watchtower` / `monolith`) rather than `localhost:9100`
@@ -63,7 +83,7 @@ in `roles/prometheus/templates/prometheus.yml.j2` under those jobs, then re-depl
 | `http://navidrome.littlewolfacres.com` | http_2xx | Navidrome reachable |
 | `192.168.0.20` | icmp | Monolith host pingable |
 | `192.168.0.21` | icmp | Watchtower self-check |
-| `1.1.1.1` | icmp | WAN/internet connectivity |
+| `1.1.1.1` | icmp | WAN/internet connectivity — also the basis for the `WANDown` alert |
 
 ---
 
@@ -88,6 +108,11 @@ every deploy — community dashboards imported via the UI will be removed.
 | T-Mobile 5G Gateway | `tmobile-gateway.json` | Custom (`lwa-tmobile-gateway`) | Gateway signal, band, uptime |
 | Reolink NVR | `reolink-nvr.json` | Custom (`lwa-reolink-nvr`) | NVR/camera status and HDD usage |
 
+> **The Loki datasource is not provisioned by Ansible** — it was added manually through
+> the Grafana UI (Connections → Data sources → Loki → `http://localhost:3100`). If Watchtower
+> is ever rebuilt from scratch, that step needs to be repeated manually, or migrated into the
+> Grafana role as a provisioned datasource file under `/etc/grafana/provisioning/datasources/`.
+
 ### Using Node Exporter Full
 
 The dashboard has two template variables at the top:
@@ -97,6 +122,24 @@ The dashboard has two template variables at the top:
 
 If panels show N/A after a restart, the variable selection reset. Open the Job
 dropdown and select the host — data returns immediately.
+
+### Querying logs in Grafana (Loki)
+
+Use **Explore**, select the **Loki** datasource, and query with LogQL:
+
+```logql
+# All Watchtower systemd journal logs
+{job="watchtower-journal"}
+
+# Logs from a specific unit
+{job="watchtower-journal", unit="tmobile_exporter.service"}
+
+# Filter by journal priority level
+{job="watchtower-journal", level="err"}
+
+# ER605 syslog (empty until the ER605 is configured to send syslog — see WAN2 / ER605 Syslog below)
+{job="er605-syslog"}
+```
 
 ### Adding a new community dashboard
 
@@ -130,31 +173,93 @@ services/watchtower/ansible/roles/prometheus/templates/alert_rules.yml.j2
 services/watchtower/ansible/roles/grafana/templates/alert_rules.yml.j2
 ```
 
+> **Jinja2 vs Go templates — escaping gotcha.** This file is rendered through Ansible's
+> Jinja2 engine before Prometheus ever sees it. Annotation text that needs Prometheus's
+> own Go-template variables (`$value`, `$labels.foo`) must be escaped so Ansible passes
+> it through literally instead of trying to parse it: use `{{ "{{" }} $value {{ "}}" }}`,
+> never raw `{{ $value }}`. Getting this wrong throws a Jinja2 syntax error on the
+> `Deploy Prometheus alert rules` task — and because Ansible halts a play on task failure,
+> every role *after* `prometheus` in `monitoring.yml` (`alertmanager`, `loki`, `promtail`,
+> etc.) silently never runs. If a deploy appears to partially succeed — some roles clearly
+> updated, others inexplicably untouched for days — check this file for an unescaped `$`
+> before looking anywhere else.
+
 ### Active Prometheus alert rules
 
 | Alert | Condition | Severity | Host |
 |-------|-----------|----------|------|
 | `WatchtowerHighCPU` | CPU > 85% for 5 min | warning | watchtower |
 | `WatchtowerHighMemory` | Memory > 85% for 5 min | warning | watchtower |
-| `WatchtowerLowDisk` | Disk `/` > 80% | critical | watchtower |
-| `WatchtowerPrometheusTSDB` | TSDB blocks > 8GB (80% of 10GB retention limit) | warning | watchtower |
+| `WatchtowerLowDisk` | Disk `/` > 80% for 10 min | warning | watchtower |
+| `WatchtowerCriticalDisk` | Disk `/` > 90% for 5 min | critical | watchtower |
+| `WatchtowerPrometheusDown` | `up{job="prometheus"} == 0` for 2 min | critical | watchtower |
+| `WatchtowerPrometheusTSDB` | TSDB blocks > 8GB (80% of 10GB retention limit) for 15 min | warning | watchtower |
 | `WatchtowerNodeExporterDown` | `up{job="watchtower"} == 0` for 1 min | critical | watchtower |
 | `AdGuardHomeDown` | `up{job="adguard"} == 0` for 1 min | critical | watchtower |
 | `MonolithDown` | `up{job="monolith"} == 0` for 1 min | critical | monolith |
 | `MonolithHighCPU` | CPU > 85% for 5 min | warning | monolith |
 | `MonolithHighMemory` | Memory > 85% for 5 min | warning | monolith |
-| `MonolithLowDisk` | Disk `/` > 80% | critical | monolith |
-| `MonolithLowDiskHddC` | Disk `/mnt/hdd-c` > 80% | critical | monolith |
-| `MonolithLowDiskHddD` | Disk `/mnt/hdd-d` > 80% | warning | monolith |
+| `MonolithLowDisk` | Disk `/` > 80% for 5 min | critical | monolith |
+| `MonolithLowDiskHddC` | Disk `/mnt/hdd-c` > 80% for 5 min | critical | monolith |
+| `MonolithLowDiskHddD` | Disk `/mnt/hdd-d` > 80% for 5 min | warning | monolith |
+| `ArgoCDAppOutOfSync` | App OutOfSync for 5 min | warning | monolith |
+| `ArgoCDAppDegraded` | App health Degraded for 5 min | critical | monolith |
+| `ArgoCDAppMissing` | App health Missing for 2 min | critical | monolith |
+| `ArgoCDControllerDown` | `up{job="argocd-app-controller"} == 0` for 1 min | critical | monolith |
+| `ArgoCDServerDown` | `up{job="argocd-server"} == 0` for 1 min | critical | monolith |
+| `DeadManSwitch` | `vector(1)` — always firing | none | — |
+| `WANDown` | `probe_success{instance="1.1.1.1"} == 0` for 3 min | critical | watchtower |
+| `TMobileExporterDown` | `up{job="tmobile"} == 0` for 2 min | warning | watchtower |
+| `TMobile4GSignalWeak` | 4G RSRP < -110 dBm for 10 min | warning | watchtower |
+| `TMobile5GSignalWeak` | 5G RSRP < -110 dBm for 10 min | warning | watchtower |
 
-All alerts route to Alertmanager → `#sentinel` Slack channel.
+All severity-bearing alerts route to Alertmanager → `#sentinel` Slack channel.
+`DeadManSwitch` is routed separately — see **Alertmanager → Dead Man's Switch / Watchdog** below.
 
 ---
 
 ## Alertmanager
 
-Routes all alerts to the `Sentinel` contact point (Slack `#sentinel`).
+Routes all alerts to the `sentinel` contact point (Slack `#sentinel`).
 Webhook URL is stored in Ansible Vault (`vault_slack_webhook_url`).
+
+### RESOLVED notification format
+
+FIRING and RESOLVED messages use different bodies so a recovery notice can't be
+mistaken for a status report:
+
+- **FIRING:** 🔴 title, includes the description and a `Fired at` timestamp
+- **RESOLVED:** 🟢 `RECOVERED — <AlertName>` title, includes `Outage started` and
+  `Recovered at` timestamps instead of repeating the firing description alone
+
+This matters because a RESOLVED message is the *only* notification you'll see if an
+alert fires and clears faster than Alertmanager's `group_wait` (30s) — which is common
+right after a power outage, when Watchtower itself was down for the firing event and
+only comes back up in time to send the resolution.
+
+### Dead Man's Switch / Watchdog
+
+Alertmanager going dark (power loss, crash) means it can't send FIRING alerts about its
+own absence — Slack notifications depend on Alertmanager being alive to send them. The
+`DeadManSwitch` alert (`vector(1)`, always firing) is routed to a dedicated `watchdog`
+receiver that pings **healthchecks.io** every 5 minutes via webhook
+(`vault_healthchecks_watchdog_url` in vault). If the pings stop, healthchecks.io emails
+you independently of Slack, WAN state, or whether Watchtower is reachable at all.
+
+```bash
+# Confirm the watchdog route is live in the running config
+curl -s http://192.168.0.21:9093/api/v2/status | python3 -m json.tool | grep -A5 watchdog
+
+# Check Alertmanager's live routing tree (should show a child route
+# matching alertname="DeadManSwitch" → receiver: watchdog)
+curl -s http://192.168.0.21:9093/api/v2/status
+```
+
+Separately, `vault_healthchecks_daily_summary_url` is a **different** healthchecks.io
+check used by the daily-summary timer (see below) — two independent checks, two
+independent vault variables, do not conflate them.
+
+### General operations
 
 ```bash
 # Check health
@@ -172,6 +277,111 @@ journalctl -fu alertmanager
 
 ---
 
+## Loki & Promtail
+
+Log aggregation, added to give visibility into events that metrics alone don't
+capture — WAN failover, exporter fetch failures, systemd unit restarts — and to
+provide an event timeline that correlates with the metric graphs in Grafana.
+
+### Architecture
+
+- **Loki** runs monolithic mode (single binary, all components), filesystem storage
+  under `/var/lib/loki`, 60-day retention.
+- **Promtail** ships logs from two sources:
+  - Watchtower's systemd journal (all units — captures `tmobile_exporter` fetch errors,
+    `daily-summary` runs, `alertmanager`/`prometheus` events, etc.)
+  - A syslog listener on UDP/TCP `1514` for the ER605 — **not yet wired up**. The ER605
+    needs to be manually configured (System → Logs → Remote Syslog →
+    `192.168.0.21:1514`) before any `{job="er605-syslog"}` data appears. This was
+    deferred to land alongside the AT&T Internet Air WAN2 work.
+
+### Service health checks
+
+```bash
+systemctl status loki promtail
+
+journalctl -fu loki
+journalctl -fu promtail
+```
+
+### Verifying ingestion
+
+```bash
+# Confirm both are healthy Prometheus scrape targets
+curl -s 'http://192.168.0.21:9090/api/v1/query?query=up%7Bjob%3D~%22loki%7Cpromtail%22%7D' | python3 -m json.tool
+
+# Query Loki directly via its HTTP API
+curl -s 'http://192.168.0.21:3100/loki/api/v1/query?query={job="watchtower-journal"}' | python3 -m json.tool
+```
+
+Or use Grafana Explore with the Loki datasource — see **Grafana Dashboards → Querying
+logs in Grafana** above.
+
+### Troubleshooting
+
+**No logs appear in Grafana Explore at all:**
+1. Confirm the Loki datasource exists in Grafana (Connections → Data sources). It is
+   **not** provisioned by Ansible — see the note under Grafana Dashboards above. If
+   missing, add it manually: type Loki, URL `http://localhost:3100`, Save & Test.
+2. Confirm `promtail.service` is active: `systemctl status promtail`
+3. Confirm the `promtail` user is in the `systemd-journal` group (required to read the
+   journal): `groups promtail`
+
+**Promtail logs show journal read errors:**
+The active journal may be corrupted — see **Journald Health** below.
+
+**A whole deploy silently skipped Loki/Promtail despite the PR being merged:**
+Check whether an earlier role in `monitoring.yml` (almost always `prometheus`, via a
+template syntax error) failed and halted the play before reaching `loki`/`promtail` in
+the role list. See the Jinja2/Go-template escaping note under **Alert Rules** above.
+This exact failure mode happened once already — `prometheus` succeeded, `alertmanager`
+failed silently on a bad template, and `loki`/`promtail` never ran for days despite the
+merge showing complete on GitHub.
+
+---
+
+## Journald Health
+
+Promtail's journal source makes journal integrity a monitoring-stack concern, not just
+a host hygiene one. The most common cause of corruption is a dirty power loss — a torn
+write at the tail of the active `system.journal` file, distinct from the rotated/archived
+journal files, which are sealed and essentially never corrupt.
+
+```bash
+# Verify all journal files — this can take a while on a host with many archived files
+sudo journalctl --verify
+
+# A corrupted ACTIVE file shows as e.g.:
+#   File corruption detected at /var/log/journal/<machine-id>/system.journal:<offset> (of <size> bytes, NN%).
+#   FAIL: /var/log/journal/<machine-id>/system.journal (Bad message)
+# Archived files (named system@<boot-id>-<seq>-<hash>.journal) almost never show this —
+# if one of those fails, it's a different and more concerning class of problem.
+```
+
+**Recovery (safe, low-risk):**
+
+```bash
+# Seal the corrupted active file and start a clean one — does not delete anything yet
+sudo journalctl --rotate
+
+# Confirm a fresh system.journal was created (size should be the default ~8MB)
+ls -la /var/log/journal/*/system.journal
+
+# Re-verify — the corrupted file will now appear under its rotated name
+# (no longer "system.journal"), confirming it's sealed and detached from active writes
+sudo journalctl --verify
+
+# Once confirmed sealed, the corrupted archived file is safe to remove —
+# the lost entries are isolated to the brief window right around the power event
+sudo rm /var/log/journal/*/system@<rotated-filename-from-verify-output>.journal
+```
+
+No data of practical concern is lost beyond the immediate corruption window — every
+other archived journal file covering the rest of host history remains intact and
+passes verification.
+
+---
+
 ## Daily Summary
 
 A Python script (`/usr/local/bin/daily-summary.py`) runs via systemd timer at
@@ -180,6 +390,11 @@ A Python script (`/usr/local/bin/daily-summary.py`) runs via systemd timer at
 It queries Prometheus directly over HTTP and is completely independent of Alertmanager.
 If the morning report populates correctly but Grafana shows no data, the issue is in
 Grafana (dashboard variables, provisioning, data source) — not in Prometheus.
+
+It also pings a **separate** healthchecks.io check (`vault_healthchecks_daily_summary_url`)
+on each successful run — do not confuse this with the Alertmanager watchdog check
+described above. Two checks, two purposes: this one confirms the digest script itself
+ran; the watchdog confirms Alertmanager is alive at all times.
 
 ```bash
 # Check timer schedule and last run
@@ -219,6 +434,14 @@ Key metrics produced:
 | `ifInErrors` / `ifOutErrors` | counter | Interface errors |
 | `ifInDiscards` / `ifOutDiscards` | counter | Discarded packets |
 | `ifDescr` / `ifName` / `ifAlias` | info label | Human-readable interface names (via lookup) |
+
+### Pending additions
+
+Commented scrape job stubs already exist in `prometheus.yml.j2` for the incoming SG2218P
+managed switch and the EAP225-Outdoor AP. Once those devices are installed and assigned
+IPs, set `ip_sg2218p` / `ip_eap225_outdoor` in `ansible/vars/main.yml` and uncomment the
+corresponding `snmp-sg2218p` / `snmp-eap-outdoor` jobs. See `docs/network-rebuild-plan.md`
+for the full VLAN migration this is part of.
 
 ### Testing SNMP manually
 
@@ -330,11 +553,31 @@ Prometheus on Watchtower scrapes `monolith.littlewolfacres.com:30900`.
 
 ---
 
+## ArgoCD Metrics
+
+ArgoCD's application-controller and server both expose Prometheus metrics via NodePort,
+since Prometheus runs external to k3s and can't use in-cluster service discovery.
+
+```bash
+# Check both targets are healthy
+curl -s http://192.168.0.21:9090/api/v1/targets | python3 -m json.tool | grep -A10 argocd
+
+# Query reconciliation/sync status directly
+curl -s 'http://192.168.0.21:9090/api/v1/query?query=argocd_app_info' | python3 -m json.tool
+```
+
+See the **Active Prometheus alert rules** table above for the five ArgoCD alerts
+(`ArgoCDAppOutOfSync`, `ArgoCDAppDegraded`, `ArgoCDAppMissing`, `ArgoCDControllerDown`,
+`ArgoCDServerDown`). For credential rotation and GitOps operations generally, see
+`docs/homelab-state.md` → ArgoCD and `docs/runbook.md`.
+
+---
+
 ## Service Health Checks
 
 ```bash
 # All monitoring services at once
-systemctl status prometheus alertmanager grafana-server node_exporter \
+systemctl status prometheus alertmanager grafana-server loki promtail node_exporter \
   blackbox_exporter snmp_exporter adguard_exporter tmobile_exporter \
   reolink_exporter daily-summary.timer
 
@@ -342,6 +585,8 @@ systemctl status prometheus alertmanager grafana-server node_exporter \
 journalctl -fu prometheus
 journalctl -fu alertmanager
 journalctl -fu grafana-server
+journalctl -fu loki
+journalctl -fu promtail
 journalctl -fu adguard_exporter
 journalctl -fu reolink_exporter
 journalctl -fu snmp_exporter
@@ -386,7 +631,7 @@ All monitoring config is managed by Ansible, run from **Apex** (`192.168.0.19`).
 ```bash
 cd ~/lwa-homelab/services/watchtower/ansible
 
-# Deploy full monitoring stack (Prometheus, Alertmanager, Grafana, daily summary, Argus)
+# Deploy full monitoring stack (Prometheus, Alertmanager, Loki, Promtail, Grafana, daily summary, Argus, NUT)
 ansible-playbook -i inventory.ini playbooks/monitoring.yml \
   --vault-password-file=~/lwa-homelab/.vault_pass
 
@@ -399,11 +644,22 @@ ansible-playbook -i inventory.ini playbooks/exporters.yml \
   --vault-password-file=~/lwa-homelab/.vault_pass
 ```
 
-The `monitoring.yml` playbook applies roles in order:
-`prometheus → alertmanager → netdata → grafana → daily_summary → argus → nut`
+The `monitoring.yml` playbook applies roles **in order**:
+`prometheus → alertmanager → loki → promtail → netdata → grafana → daily_summary → argus → nut`
+
+**Order matters more than it looks.** Ansible halts a play on the first task failure with
+no rescue block configured here. A failure in `prometheus` (most commonly a Jinja2
+template error — see the note under **Alert Rules**) means every role listed after it
+never runs at all, with no obvious error surfaced beyond the one failed task in the CI log.
+If a deploy looks "mostly successful" but specific services seem stuck on old config,
+check the role order against what's actually running before assuming the change didn't
+get committed.
 
 The GitHub Actions deploy workflow triggers automatically on push to `master` for paths
-under `services/watchtower/**` or `ansible/vars/**`.
+under `services/watchtower/**` or `ansible/vars/**`. Merges via PRs that only touch
+`docs/**` do **not** trigger a redeploy — if a config change needs to go live and the
+only paths touched are docs, you'll need `workflow_dispatch` (Actions → Deploy Watchtower
+Config → Run workflow) instead of waiting on an automatic trigger.
 
 ---
 
@@ -457,7 +713,7 @@ grep -A5 'blackbox-http\|blackbox-icmp' /etc/prometheus/prometheus.yml
 curl "http://localhost:9115/probe?module=icmp&target=1.1.1.1"
 
 # Check probe_success in Prometheus
-curl -s 'http://localhost:9090/api/v1/query?query=probe_success' | python3 -m json.tool
+curl -s 'http://192.168.0.21:9090/api/v1/query?query=probe_success' | python3 -m json.tool
 ```
 
 ### k3s dashboard still showing No Data after kube-state-metrics deployed
@@ -503,6 +759,43 @@ curl -s http://192.168.0.21:9093/api/v2/status | python3 -m json.tool
 journalctl -fu alertmanager -n 100
 ```
 
+### A whole deploy seems to have silently not happened
+
+```bash
+# Check the actual restart/start time of the service in question —
+# if it predates the merge you're troubleshooting, the role never ran
+systemctl status <service> | grep Active
+
+# Check Alertmanager's LIVE config against the repo template —
+# confirms whether the new config actually loaded, not just whether
+# the file on disk looks right
+curl -s http://192.168.0.21:9093/api/v2/status | python3 -m json.tool
+```
+Then check whether an earlier role in the `monitoring.yml` role list failed — see
+**Ansible Deployment → Order matters more than it looks** above.
+
+### Healthchecks.io watchdog ping never arrives
+
+```bash
+# Confirm the var exists in vault (will show ciphertext if not decrypted —
+# run this on apex with the vault password available)
+ansible-vault view ansible/vars/vault.yml | grep watchdog
+
+# Confirm the route exists in Alertmanager's LIVE config
+curl -s http://192.168.0.21:9093/api/v2/status | python3 -m json.tool | grep -A10 watchdog
+```
+If the var is missing from vault, the `Deploy alertmanager config` task fails on an
+undefined-variable error at render time — same halting behavior described above, just
+one role later in the chain.
+
+### Loki / Promtail show no log data
+
+See **Loki & Promtail → Troubleshooting** above.
+
+### Journal corruption / Promtail read errors
+
+See **Journald Health** above.
+
 ---
 
 ## Label Conventions
@@ -512,10 +805,10 @@ alert rules, and the daily summary script simultaneously.
 
 | Label | Values | Notes |
 |-------|--------|-------|
-| `job` | `watchtower`, `monolith`, `adguard`, `blackbox`, `blackbox-http`, `blackbox-icmp`, `snmp-*`, `tmobile`, `reolink_nvr`, `kube-state-metrics` | Identifies the scrape job / service type |
-| `instance` | `watchtower`, `monolith` (node exporters); raw address for others | Relabeled to clean hostnames for node_exporter only |
-| `severity` | `warning`, `critical` | Used in Alertmanager routing and Slack formatting |
-| `host` | `watchtower`, `monolith` | Custom label on Prometheus alert rules |
+| `job` | `watchtower`, `monolith`, `adguard`, `blackbox`, `blackbox-http`, `blackbox-icmp`, `snmp-*`, `tmobile`, `reolink_nvr`, `kube-state-metrics`, `argocd-app-controller`, `argocd-server`, `obelisk`, `loki`, `promtail` | Identifies the scrape job / service type |
+| `instance` | `watchtower`, `monolith`, `argocd`, `obelisk` (relabeled); raw address for others | Relabeled to clean hostnames for node_exporter and several NodePort-scraped jobs |
+| `severity` | `warning`, `critical`, `none` (`DeadManSwitch` only) | Used in Alertmanager routing and Slack formatting |
+| `host` | `watchtower`, `monolith` | Custom label on Prometheus alert rules — not present on `DeadManSwitch` or ArgoCD alerts, which use `host: monolith` for ArgoCD specifically since ArgoCD runs there |
 
 > The `instance` relabeling for node exporters was introduced in May 2026 to fix the Grafana
 > Node Exporter Full dashboard losing variable selections on Grafana restart.
