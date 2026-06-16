@@ -106,15 +106,21 @@ watchtower (192.168.0.21)
 │
 └── Monitoring
         Prometheus (:9090)
-            ├── scrapes: watchtower · monolith · argocd · kube-state-metrics
+            ├── scrapes: watchtower · monolith · argocd · kube-state-metrics · obelisk
             ├── scrapes: snmp_exporter (ER605, EAP245×2)
             ├── scrapes: blackbox_exporter (HTTP/ICMP probes)
             ├── scrapes: adguard_exporter · tmobile_exporter · reolink_exporter
-            └── fires alerts → Alertmanager (:9093) → Slack #sentinel
+            ├── scrapes: loki · promtail
+            └── fires alerts → Alertmanager (:9093) → Slack #sentinel + healthchecks.io watchdog
+
+        Loki (:3100) + Promtail (:9080)
+            ├── sources: Watchtower systemd journal
+            └── sources: ER605 syslog on :1514 (not yet wired — pending ER605 config)
 
         Grafana (:3001)  [display only — Alertmanager owns alerting]
             Dashboards: Node Exporter Full · Blackbox Probes · k3s Cluster
                         SNMP Interfaces · T-Mobile 5G Gateway · Reolink NVR
+            Loki datasource added manually (not Ansible-provisioned)
 
         Netdata (:19999)  real-time host observability
 ```
@@ -204,11 +210,12 @@ ArgoCD repo secret (homelab-repo)
 
 | Item | Target | Notes |
 |---|---|---|
-| Loki | watchtower | Log aggregation |
-| NUT | watchtower | UPS monitoring — role ready, waiting on hardware |
-| JetStream switch | network | Replaces unmanaged TL-SG1210P, enables per-port SNMP |
+| Migrate Obelisk into KubeVirt | monolith | KubeVirt platform already bootstrapped (cdi + kubevirt namespaces active); Obelisk itself still runs as a bare QEMU/KVM process, not yet a KubeVirt VirtualMachine resource |
+| NUT | watchtower | UPS monitoring — role ready, UPS ordered, arriving this week |
+| SG2218P managed switch | network | Replaces unmanaged TL-SG1210P, enables per-port SNMP — ordered, arriving this week |
+| EAP225-Outdoor | network | Outdoor AP, Balcony mount — ordered, arriving this week |
+| VLAN migration | network | Design + cutover runbook complete (`docs/network-rebuild-plan.md`, `docs/network-migration-runbook.md`); cutover itself pending switch arrival |
+| AT&T Internet Air | network | Evaluating as a load-balanced WAN2 on a separate cellular network from T-Mobile |
+| ER605 → Promtail syslog | watchtower | Promtail's syslog listener (:1514) is deployed but the ER605 isn't yet configured to send to it — planned alongside AT&T WAN2 work |
 | Minecraft PVC backups | monolith | Nightly CronJob → /mnt/hdd-c |
-| Obelisk | monolith | KubeVirt Win11 VM on /mnt/ssd-b — run bootstrap-kubevirt.yml to activate |
-| VLAN design | network | IoT · LAN · homelab · guest segments |
-| Lore | new node | Mac Mini M4 Pro 48GB — dedicated LAN inference |
 | Navidrome HTTPS | monolith | cert-manager annotation already understood — just needs applying |
