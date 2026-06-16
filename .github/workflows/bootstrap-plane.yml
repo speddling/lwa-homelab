@@ -24,6 +24,10 @@ name: Bootstrap Plane
 #   3. Generate random secrets (masked in logs immediately on creation)
 #   4. Create the 5 Kubernetes Secrets the chart's external_secrets config
 #      references (see kubernetes/apps/plane.yaml)
+#   5. Apply the cert-manager Certificate for plane.littlewolfacres.com
+#      (kubernetes/apps/plane-certificate.yaml) — needed because this
+#      chart's Traefik IngressRoute isn't watched by cert-manager's
+#      annotation-based ingress-shim the way a standard Ingress would be
 #
 # After this workflow completes, the secrets exist but Plane itself is
 # NOT yet running — the ArgoCD Application is deliberately on manual
@@ -161,11 +165,18 @@ jobs:
 
       - name: Create plane-live-env-secret
         if: steps.check.outputs.exists == 'false'
+        env:
+          SECRET_KEY: ${{ steps.gen.outputs.secret_key }}
         run: |
           kubectl create secret generic plane-live-env-secret \
             --namespace plane \
             --from-literal=REDIS_URL=redis://plane-redis.plane.svc.cluster.local:6379/ \
+            --from-literal=LIVE_SERVER_SECRET_KEY="${SECRET_KEY}" \
             --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply Plane TLS Certificate
+        run: |
+          kubectl apply -f kubernetes/apps/plane-certificate.yaml
 
       - name: Print bootstrap summary
         run: |

@@ -15,12 +15,17 @@
 # referenced below are created by bootstrap-plane.yml, never committed
 # to git, and live only as Kubernetes Secret objects going forward.
 #
-# TLS deliberately reuses the existing cluster-wide letsencrypt-prod
-# ClusterIssuer via the standard annotation, rather than the chart's own
-# ssl.createIssuer automation — that path would require embedding the
-# Cloudflare API token directly in this committed values block, which
-# isn't acceptable. This way Plane never needs to know about that
-# credential at all.
+# TLS: explicit cert-manager Certificate resource (kubernetes/apps/
+# plane-certificate.yaml), applied by bootstrap-plane.yml — NOT the
+# cert-manager.io/cluster-issuer annotation pattern used elsewhere in
+# this repo. That annotation only works on standard Kubernetes Ingress
+# objects (cert-manager's ingress-shim watches for it specifically);
+# this chart generates a Traefik-native IngressRoute instead, a
+# different CRD entirely, which ingress-shim never sees. An annotation
+# under ingress.ingress_annotations here would silently do nothing.
+# Also still deliberately not using the chart's own ssl.createIssuer
+# automation, since that requires embedding the Cloudflare API token
+# directly in this committed values block.
 
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -46,7 +51,6 @@ spec:
           ingressClass: traefik
           ingress_annotations:
             nginx.ingress.kubernetes.io/proxy-body-size: "5m"
-            cert-manager.io/cluster-issuer: letsencrypt-prod
 
         ssl:
           createIssuer: false
@@ -76,6 +80,14 @@ spec:
           default_cluster_domain: cluster.local
           docstore_bucket: uploads
           doc_upload_size_limit: 5242880
+          # Chart hardcodes WEB_URL as http://<appHost> with no override
+          # field anywhere in values.yaml (confirmed via helm show values,
+          # grepping for web_url/base_url/protocol/scheme/https — nothing).
+          # cors_allowed_origins IS a real documented override, so fix that
+          # one properly here. WEB_URL itself needs the ignoreDifferences
+          # entry below plus a one-time live kubectl patch, since there's
+          # no clean way to express "this is https-only" to this chart.
+          cors_allowed_origins: "https://plane.littlewolfacres.com"
 
         external_secrets:
           pgdb_existingSecret: plane-pgdb-secret
@@ -102,3 +114,16 @@ spec:
     syncOptions:
       - CreateNamespace=true
     # automated sync intentionally omitted — see header note
+  ignoreDifferences:
+    # WEB_URL has no Helm override field in this chart (confirmed via
+    # helm show values) — it's hardcoded to http://<appHost>, which
+    # breaks self-referential redirects since this is HTTPS-only
+    # (IngressRoute has no plain-HTTP entrypoint at all). Live-patched
+    # to https:// once; ignored here so ArgoCD doesn't revert it back
+    # to the chart's hardcoded default on the next sync.
+    - group: ""
+      kind: ConfigMap
+      name: plane-app-vars
+      namespace: plane
+      jqPathExpressions:
+        - '.data.WEB_URL'
