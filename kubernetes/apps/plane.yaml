@@ -147,5 +147,5 @@ spec:
       kind: ConfigMap
       name: plane-app-vars
       namespace: plane
-      jqPathExpressions:
-        - '.data.WEB_URL'
+      jsonPointers:
+        - /data/WEB_URL
