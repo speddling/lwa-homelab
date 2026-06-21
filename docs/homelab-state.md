@@ -1,6 +1,6 @@
-# Little Wolf Acres — Homelab Current State
-> Last updated: 2026-05-30 · Authored on apex · All IaC in `speddling/lwa-homelab` repo
-> Future plans → `homelab-roadmap.md` · Operational debt and one-off tasks → `homelab-todo.md`
+# LWA Infra — Current State
+> Last updated: 2026-06-21 · Authored on apex · All IaC in `speddling/lwa-homelab` repo (GitHub rename to `lwa-infra` pending — update this line once that lands)
+> This is a snapshot of what's running, not what's coming. Roadmap, in-flight upgrades, and operational debt live in Plane (`LWA Infra` project), not in this repo.
 
 ---
 
@@ -12,7 +12,9 @@
 |---|---|---|---|
 | ER605 v2.0 | 192.168.0.1 | Gigabit Multi-WAN VPN Router | ✅ Online |
 | OC200 | 192.168.0.7 | Omada Network Controller | ✅ Online |
-| TL-SG1210P | — | Unmanaged PoE Switch | ✅ Online (no SNMP) |
+| TL-SG1210P | — | Unmanaged PoE Switch | ✅ Online (no SNMP) — being retired |
+| SG2218P | — | Managed PoE Switch (replacement) | 🔶 On-site, not yet network-active — blocked on power extension cables |
+| CyberPower CP1000PFCLCD | — | UPS | 🔶 Powered, all critical loads connected — monitoring not yet configured |
 | EAP245 — Foyer | 192.168.0.2 | Access Point | ✅ Online |
 | EAP245 — Yarn Studio | 192.168.0.5 | Access Point | ✅ Online |
 
@@ -56,7 +58,7 @@
 - Community string: `littlewolfacres` (stored in Ansible vault)
 - SNMPv3 user: `prometheus` (stored in Ansible vault)
 - Monitored devices: ER605, EAP245 Foyer, EAP245 Yarn Studio
-- **Note:** TL-SG1210P is unmanaged — no SNMP support. Upgrade to JetStream switch planned.
+- **Note:** TL-SG1210P is unmanaged — no SNMP support. Its replacement, the SG2218P, is on-site but not yet wired into the network (see Hardware table above), so it isn't providing SNMP data either.
 
 ---
 
@@ -207,7 +209,7 @@ Alerting is owned by **Prometheus + Alertmanager**. Grafana is display-only.
 | Machine | AMD Tower (Fractal Design Define R4) |
 | CPU | AMD Ryzen 7 5700G — 8 cores / 16 threads |
 | GPU | AMD Radeon Vega (integrated, Cezanne) |
-| RAM | 32 GB DDR4-3200 (2×16 GB Corsair Vengeance LPX CMK32GX4M2E3200C16) |
+| RAM | 64 GB DDR4-3200 (4×16 GB — original 2×16 GB Corsair Vengeance LPX CMK32GX4M2E3200C16 + 2×16 GB added 2026-06-20) |
 | OS | Ubuntu Server 24.04.4 LTS |
 | Kernel | 6.8.0-111-generic |
 | Hostname | `monolith` |
@@ -218,11 +220,13 @@ Alerting is owned by **Prometheus + Alertmanager**. Grafana is display-only.
 | | 3.6 TB HDD — Seagate ST4000DM004 — `/mnt/hdd-c` — music library / fileserver / bulk storage |
 | | 1.8 TB HDD — Hitachi HUA72202 — `/mnt/hdd-d` — mirror of hdd-c |
 
-> **RAM upgrade:** 2×16 GB DDR4-3200 to bring total to 64 GB — ordered, arriving this week.
+> Doubled from 32 GB on 2026-06-20, confirmed stable since.
 
 ### Role
 
 Primary k3s worker node and household services platform. Hosts all Kubernetes workloads including Navidrome, Minecraft, and family fileshares. Named for its role as the single monolithic compute node — a deliberate single-node architecture expandable to a multi-node cluster if needed.
+
+With the RAM upgrade complete, Monolith is at its intended ceiling: no GPU, no PSU upgrade, no case fans. AI workloads run elsewhere — Monolith's job is k3s and household services.
 
 ### Workspaces
 
@@ -436,32 +440,6 @@ ollama pull <model-name>
 curl http://localhost:11434
 ```
 
-### Next Model (when ready to step up)
-`llama3.1:8b` — fits comfortably in 16 GB, noticeably more capable than 3b, good daily driver until Lore arrives.
-```bash
-ollama pull llama3.1:8b
-ollama run llama3.1:8b
-```
-
-### Lore — Mac Mini / Mac Studio (Planned)
-
-See `homelab-roadmap.md` for full spec and timing.
-
-| Detail | Value |
-|---|---|
-| Hostname | `lore` (reserved) |
-| IP | TBD — DHCP MAC-bound on arrival |
-| Status | Planned — awaiting M5 refresh |
-
-### Data — Linux AI Workstation (Aspirational)
-
-See `homelab-roadmap.md` for full spec and rationale.
-
-| Detail | Value |
-|---|---|
-| Hostname | `data` (reserved) |
-| Status | Aspirational |
-
 ---
 
 ## Apex
@@ -532,7 +510,7 @@ ansible-playbook --vault-password-file ~/lwa-homelab/.vault_pass \
 
 ## Git Workflow
 
-All changes go through a branch → PR → merge to main flow. Direct pushes to main are disabled via branch protection.
+All changes go through a branch → PR → merge to master flow. Direct pushes to master are disabled via branch protection.
 
 Claude handles the full workflow via Scribe (see `docs/Claude MCPs.md`). Human action required only at PR review and merge.
 
@@ -548,8 +526,8 @@ git push -u origin feat/description-of-change
 # Open PR via GitHub CLI
 gh pr create --title "feat: description" --body "What and why"
 
-# After merge — sync local repo back to main
-git checkout main && git pull
+# After merge — sync local repo back to master
+git checkout master && git pull
 
 # Trigger a workflow manually
 gh workflow run deploy-watchtower.yml
