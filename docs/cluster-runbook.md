@@ -650,3 +650,31 @@ gh workflow run deploy-monolith.yml
 | `slack-minecraft-import.yml` | Zombatron Importer bot | Clear import marker + bounce pod |
 | `bootstrap-argocd.yml` | Manual (once) | cert-manager + ArgoCD install |
 | `provision-k3s.yml` | Manual | k3s cluster init |
+
+---
+
+## Network Closet
+
+### Physical Layout
+
+Bookcase-style closet with passive cooling from a 12-foot ceiling column into a full basement. Active cooling via AC supply/return tap available if needed in summer. House maintained at 68F in summer.
+
+| Shelf | What lives there |
+|---|---|
+| Top | T-Mobile FAST 5688W and AT&T CGW450, raised on risers above power cords, 4 feet apart offset 90 degrees from each other |
+| Upper | ER605, SG2218P, OC200, patch panel |
+| Middle | Black wood shelf unit (monolith + watchtower), lowered from original position to sit just above monolith's physical footprint |
+| Floor | UPS (CyberPower CP1000PFCLCD) on the opposite side of the tan brackets from the shelf unit |
+
+### Cabling Standard
+
+All permanent structured runs use solid core Cat6 riser (CMR). Solid core terminates at a keystone patch panel -- never plugs directly into a switch port. Short stranded Cat6 patch cables run from the panel to the SG2218P.
+
+| Color | Role |
+|---|---|
+| Red | WAN uplinks -- T-Mobile and AT&T to ER605 WAN ports |
+| Orange | LAN / infrastructure -- switch, router, OC200, servers (monolith, watchtower) |
+| Yellow | Edge endpoints -- APs and cameras (mostly PoE) |
+| White | Management / out-of-band -- UPS, console, monitoring adjacent |
+
+> All equipment is black. White patch cables are reserved for management runs specifically so they stand out visually against everything else in the closet.
