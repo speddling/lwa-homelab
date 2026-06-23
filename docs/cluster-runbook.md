@@ -709,8 +709,8 @@ All within the closet, stranded Cat6, device to SG2218P directly.
 | AT&T CGW450 to ER605 WAN2 | Red | 14ft | Top shelf down to router |
 | ER605 to SG2218P | Yellow | 1ft | Same shelf |
 | OC200 to SG2218P | Yellow | 1ft | Same shelf |
-| NVR uplink to SG2218P | Yellow | 1ft | Direct, NVR on switch shelf, port pre-assigned |
-| Watchtower to SG2218P | Yellow | 2ft | Watchtower positioned directly above switch port, over top of switch, shelf is under 10" deep |
+| Watchtower to SG2218P | Yellow | 2ft | Directly above switch port, over top of switch, shelf under 10" deep |
+| NVR uplink to SG2218P | Yellow | 2ft | Behind rack, over top of switch, port pre-assigned |
 | Monolith to SG2218P | Yellow | 5ft | Up wall to panel height, across to switch |
 | Lore (future) to SG2218P | Yellow | 3ft | Next to watchtower |
 | Data (future) to SG2218P | Yellow | 7ft | Next to watchtower, longer run than Monolith |
