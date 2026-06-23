@@ -99,9 +99,9 @@ scrape_configs:
       - target_label: __address__
         replacement: localhost:{{ port_snmp_exporter }}
 
-  - job_name: 'snmp-eap-yarn-studio'
+  - job_name: 'snmp-eap-upstairs-hall'
     static_configs:
-      - targets: ['{{ ip_eap245_yarn_studio }}']
+      - targets: ['{{ ip_eap245_upstairs_hall }}']
     metrics_path: /snmp
     params:
       module: [if_mib]
@@ -114,9 +114,9 @@ scrape_configs:
       - target_label: __address__
         replacement: localhost:{{ port_snmp_exporter }}
 
-  - job_name: 'snmp-eap-foyer'
+  - job_name: 'snmp-eap-downstairs-hall'
     static_configs:
-      - targets: ['{{ ip_eap245_foyer }}']
+      - targets: ['{{ ip_eap245_downstairs_hall }}']
     metrics_path: /snmp
     params:
       module: [if_mib]

@@ -1,5 +1,5 @@
 # LWA Infra -- Architecture Overview
-> Last updated: 2026-06-22
+> Last updated: 2026-06-23
 
 ---
 
@@ -15,23 +15,24 @@ Internet
             │   (both WAN1 and WAN2 terminate here — dual-WAN failover/load-balance.
             │    Final tuning + SNMP monitoring for WAN2 deferred until after VLAN cutover)
             ▼
-        ER605 v2 (192.168.0.1)
+        ER605 v2 (192.168.10.1)
         Multi-WAN VPN Router
             │
-        SG2218P (managed PoE+ switch — installed, OC200 adoption/config in progress)
+        SG2218P (192.168.10.2 — managed PoE+ switch, VLAN-segmented)
             │
     ┌───────┼───────────────────────────┐
     │       │                           │
 EAP245   EAP245                    Wired LAN
-(Foyer)  (Yarn Studio)
+(Downstairs (Upstairs
+  Hall)     Hall)
                     ┌───────────────────┼───────────────────┐
                     │                   │                   │
-              apex (.19)         monolith (.20)      watchtower (.21)
+              apex (.20.2)       monolith (.30.10)   watchtower (.30.11)
          MacBook Air M4        AMD Ryzen 7 5700G     Asus VM40B
          16GB unified          64GB DDR4             8GB DDR3
          Primary WS            k3s node              DNS + Monitoring
 
-                                                  studio (.109)
+                                                  studio (.20.3)
                                              Dell Precision 5560
                                              DAW / KDE workstation
 ```
@@ -65,7 +66,7 @@ apex (author)
 ## Monolith — k3s Cluster
 
 ```
-monolith (192.168.0.20)
+monolith (192.168.30.10)
 │
 ├── Traefik (ingress, TLS termination)
 │       ├── argocd.littlewolfacres.com   → ArgoCD
@@ -107,7 +108,7 @@ monolith (192.168.0.20)
 ## Watchtower — DNS + Monitoring Stack
 
 ```
-watchtower (192.168.0.21)
+watchtower (192.168.30.11)
 │
 ├── DNS
 │       AdGuard Home (:53, :3000)

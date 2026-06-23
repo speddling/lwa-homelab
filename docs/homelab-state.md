@@ -1,5 +1,5 @@
 # LWA Infra -- Current State
-> Last updated: 2026-06-22
+> Last updated: 2026-06-23
 
 ---
 
@@ -11,46 +11,46 @@
 |---|---|---|---|
 | T-Mobile FAST 5688W | -- | 5G WAN1 | Online |
 | AT&T CGW450 | -- | 5G WAN2 | Online |
-| ER605 v2.0 | 192.168.0.1 | Multi-WAN VPN Router | Online |
-| OC200 | 192.168.0.7 | Network Controller | Online |
-| SG2218P | -- | Managed PoE+ Switch | Online |
+| ER605 v2.0 | 192.168.10.1 | Multi-WAN VPN Router | Online |
+| OC200 | 192.168.10.3 | Network Controller | Online |
+| SG2218P | 192.168.10.2 | Managed PoE+ Switch | Online |
 | CyberPower CP1000PFCLCD | -- | UPS | Online |
-| EAP245 | 192.168.0.2 | Access Point | Online |
-| EAP245 | 192.168.0.5 | Access Point | Online |
+| EAP245 — Downstairs Hall | 192.168.10.4 | Access Point | Online |
+| EAP245 — Upstairs Hall | 192.168.10.5 | Access Point | Online |
 
 ### Static DHCP Reservations (MAC-bound in ER605)
 
 | IP | Hostname | Role |
 |---|---|---|
-| 192.168.0.4 | Big Brother | NVR |
-| 192.168.0.7 | OC200 | Network Controller |
-| 192.168.0.19 | apex | Primary Workstation |
-| 192.168.0.20 | monolith | k3s Node |
-| 192.168.0.21 | watchtower | DNS / Monitoring |
-| 192.168.0.109 | studio | DAW / KDE Workstation |
+| 192.168.40.10 | Big Brother | NVR |
+| 192.168.10.3 | OC200 | Network Controller |
+| 192.168.20.2 | apex | Primary Workstation |
+| 192.168.30.10 | monolith | k3s Node |
+| 192.168.30.11 | watchtower | DNS / Monitoring |
+| 192.168.20.3 | studio | DAW / KDE Workstation |
 
 > All other devices use dynamic DHCP leases. Do not set static IPs at the OS level.
 
 ### DNS
 
-- **Primary DNS:** Watchtower (`192.168.0.21`) -- AdGuard Home -> Unbound -> Root
+- **Primary DNS:** Watchtower (`192.168.30.11`) -- AdGuard Home -> Unbound -> Root
 - **Fallback DNS:** `1.1.1.1`
-- **DHCP DNS option:** ER605 pushes `192.168.0.21` to all LAN clients
+- **DHCP DNS option:** ER605 pushes `192.168.30.11` to all internal VLAN clients (Guest uses `1.1.1.1` / `9.9.9.9`)
 - **Local domain:** `littlewolfacres.com` -- all hosts resolve as `hostname.littlewolfacres.com`
 - **Short hostname resolution:** AdGuard Home search domain set to `littlewolfacres.com`
 - **Local rewrites managed in AdGuard Home:**
 
 | Domain | Resolves To |
 |---|---|
-| `watchtower.littlewolfacres.com` | 192.168.0.21 |
-| `grafana.littlewolfacres.com` | 192.168.0.21 |
-| `monolith.littlewolfacres.com` | 192.168.0.20 |
-| `navidrome.littlewolfacres.com` | 192.168.0.20 |
-| `argocd.littlewolfacres.com` | 192.168.0.20 |
-| `plane.littlewolfacres.com` | 192.168.0.20 |
-| `zombatron.littlewolfacres.com` | 192.168.0.20 |
-| `studio.littlewolfacres.com` | 192.168.0.109 |
-| `apex.littlewolfacres.com` | 192.168.0.19 |
+| `watchtower.littlewolfacres.com` | 192.168.30.11 |
+| `grafana.littlewolfacres.com` | 192.168.30.11 |
+| `monolith.littlewolfacres.com` | 192.168.30.10 |
+| `navidrome.littlewolfacres.com` | 192.168.30.10 |
+| `argocd.littlewolfacres.com` | 192.168.30.10 |
+| `plane.littlewolfacres.com` | 192.168.30.10 |
+| `zombatron.littlewolfacres.com` | 192.168.30.10 |
+| `studio.littlewolfacres.com` | 192.168.20.3 |
+| `apex.littlewolfacres.com` | 192.168.20.2 |
 
 ### SNMP
 
@@ -74,7 +74,7 @@
 | OS | Ubuntu Server 24.04.4 LTS |
 | Kernel | 6.8.0-111-generic |
 | Hostname | `watchtower` |
-| IP | 192.168.0.21 (DHCP MAC-bound) |
+| IP | 192.168.30.11 (DHCP MAC-bound) |
 
 ### Role
 
@@ -120,9 +120,9 @@ DNS resolution and infrastructure monitoring.
 | blackbox | localhost:9115 | ✅ Up |
 | adguard | localhost:9618 | ✅ Up |
 | monolith | monolith:9100 | ✅ Up |
-| snmp-er605 | 192.168.0.1 | ✅ Up |
-| snmp-eap-yarn-studio | 192.168.0.5 | ✅ Up |
-| snmp-eap-foyer | 192.168.0.2 | ✅ Up |
+| snmp-er605 | 192.168.10.1 | ✅ Up |
+| snmp-eap-upstairs-hall | 192.168.10.5 | ✅ Up |
+| snmp-eap-downstairs-hall | 192.168.10.4 | ✅ Up |
 | tmobile | localhost:9719 | ✅ Up |
 | reolink_nvr | localhost:9720 | ✅ Up |
 
@@ -199,7 +199,7 @@ DNS resolution and infrastructure monitoring.
 | OS | Ubuntu Server 24.04.4 LTS |
 | Kernel | 6.8.0-111-generic |
 | Hostname | `monolith` |
-| IP | 192.168.0.20 (DHCP MAC-bound) |
+| IP | 192.168.30.10 (DHCP MAC-bound) |
 | Storage | 512 GB NVMe -- Samsung PM9A1 -- `/` (150G LVM) |
 | | 500 GB SSD -- Crucial CT500MX500SSD1 -- `/mnt/ssd-a` -- k8s local-path provisioner |
 | | 256 GB SSD -- Crucial CT256M55 -- `/mnt/ssd-b` -- isolated workspace / client jumpbox |
@@ -226,7 +226,7 @@ k3s single-node cluster host. Runs all household and client services.
 | Name | Status | Description |
 |---|---|---|
 | Synapse | ✅ Active | MCP/AI tooling namespace |
-| Obelisk | ✅ Active | Windows 11 VM on `/mnt/ssd-b` -- QEMU/KVM. RDP: `192.168.0.20:33389` |
+| Obelisk | ✅ Active | Windows 11 VM on `/mnt/ssd-b` -- QEMU/KVM. RDP: `192.168.30.10:33389` |
 
 ### Services
 
@@ -239,7 +239,7 @@ k3s single-node cluster host. Runs all household and client services.
 | node_exporter | Host metrics | ✅ Running |
 | Synapse | MCP server | ✅ Running |
 | hdd-d mirror | Nightly rsync hdd-c -> hdd-d via systemd timer at 02:00 | ✅ Running |
-| Obelisk | QEMU/KVM Win11 VM -- RDP `192.168.0.20:33389` | ✅ Running |
+| Obelisk | QEMU/KVM Win11 VM -- RDP `192.168.30.10:33389` | ✅ Running |
 
 ### Samba Shares
 
@@ -390,7 +390,7 @@ Automatic TLS via Cloudflare DNS-01. Issues and renews Let's Encrypt certificate
 | Detail | Value |
 |---|---|
 | Hostname | `apex` |
-| IP | 192.168.0.19 (DHCP MAC-bound) |
+| IP | 192.168.20.2 (DHCP MAC-bound) |
 
 | Service | Port | Status |
 |---|---|---|
@@ -404,7 +404,7 @@ Automatic TLS via Cloudflare DNS-01. Issues and renews Let's Encrypt certificate
 | Detail | Value |
 |---|---|
 | Hostname | `studio` |
-| IP | 192.168.0.109 (DHCP MAC-bound) |
+| IP | 192.168.20.3 (DHCP MAC-bound) |
 
 | Mount | Source |
 |---|---|
