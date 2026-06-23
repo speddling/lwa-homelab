@@ -1,6 +1,6 @@
-# Little Wolf Acres — Homelab Runbook
-> Operational reference for day-to-day tasks, troubleshooting, and maintenance.
-> Last updated: 2026-06-15
+# LWA Infra -- Cluster Runbook
+> Operational reference for k3s, ArgoCD, cert-manager, DNS, Ansible, Terraform, and supporting services.
+> Last updated: 2026-06-22
 
 ---
 
@@ -650,3 +650,67 @@ gh workflow run deploy-monolith.yml
 | `slack-minecraft-import.yml` | Zombatron Importer bot | Clear import marker + bounce pod |
 | `bootstrap-argocd.yml` | Manual (once) | cert-manager + ArgoCD install |
 | `provision-k3s.yml` | Manual | k3s cluster init |
+
+---
+
+## Network Closet
+
+### Physical Layout
+
+Bookcase-style closet with passive cooling from a 12-foot ceiling column into a full basement. Active cooling via AC supply/return tap available if needed in summer. House maintained at 68F in summer.
+
+| Location | What lives there |
+|---|---|
+| Top shelf | T-Mobile FAST 5688W and AT&T CGW450, raised on risers above power cords, 4 feet apart offset 90 degrees from each other |
+| Upper shelf | ER605, SG2218P, OC200 |
+| Middle shelf | Black wood shelf unit with monolith and watchtower, positioned to clear the quarter round molding that monolith sits against on the right side |
+| Left wall (inside closet) | Keystone patch panel, wall-mounted, terminates all riser runs |
+| Floor | UPS (CyberPower CP1000PFCLCD) on the opposite side of the tan brackets from the shelf unit |
+
+### Cabling Standard
+
+All permanent structured runs use solid core Cat6 riser (CMR). Solid core terminates at a keystone patch panel -- never plugs directly into a switch port. Short stranded Cat6 patch cables run from the panel to the SG2218P.
+
+| Color | Role |
+|---|---|
+| Red | WAN uplinks -- T-Mobile and AT&T to ER605 WAN ports |
+| Orange | Edge endpoints -- APs and cameras (PoE) |
+| Yellow | LAN / infrastructure -- switch, router, OC200, servers |
+| White | Management / out-of-band -- UPS, console, monitoring adjacent |
+
+> All equipment is black. White patch cables are reserved for management runs specifically so they stand out visually against everything else in the closet.
+
+### Patch Panel Port Map
+
+12-port DSHOT Cat5e, wall-mounted left side of closet at rack shelf height.
+
+| Port | Device | Color | Length | Path |
+|---|---|---|---|---|
+| 1 | Camera 1 (fixed) | Orange | 3ft | Behind rack, to NVR built-in PoE port 1 |
+| 2 | Camera 2 (fixed) | Orange | 3ft | Behind rack, to NVR built-in PoE port 2 |
+| 3 | Camera 3 (fixed) | Orange | 3ft | Behind rack, to NVR built-in PoE port 3 |
+| 4 | Camera 4 (fixed) | Orange | 3ft | Behind rack, to NVR built-in PoE port 4 |
+| 5 | Camera 5 (fixed) | Orange | 3ft | Behind rack, to NVR built-in PoE port 5 |
+| 6 | Camera 6 (fixed) | Orange | 3ft | Behind rack, to NVR built-in PoE port 6 |
+| 7 | Camera 7 (advanced, SG2218P) | Orange | 3ft | Behind rack, up to switch shelf |
+| 8 | Camera 8 (advanced, SG2218P) | Orange | 3ft | Behind rack, up to switch shelf |
+| 9 | -- gap -- | -- | -- | -- |
+| 10 | EAP245 Foyer | Orange | 3ft | Up to switch |
+| 11 | EAP245 Yarn Studio | Orange | 3ft | Up to switch |
+| 12 | EAP225-Outdoor | Orange | 3ft | Up to switch |
+
+### Direct Patch Cables (no panel)
+
+All within the closet, stranded Cat6, device to SG2218P directly.
+
+| Device | Color | Length | Notes |
+|---|---|---|---|
+| T-Mobile FAST 5688W to ER605 WAN1 | Red | 14ft | Top shelf down to router |
+| AT&T CGW450 to ER605 WAN2 | Red | 14ft | Top shelf down to router |
+| ER605 to SG2218P | Yellow | 1ft | Same shelf |
+| OC200 to SG2218P | Yellow | 1ft | Same shelf |
+| Watchtower to SG2218P | Yellow | 2ft | Directly above switch port, over top of switch, shelf under 10" deep |
+| NVR uplink to SG2218P | Yellow | 2ft | Behind rack, over top of switch, port pre-assigned |
+| Monolith to SG2218P | Yellow | 5ft | Up wall to panel height, across to switch |
+| Lore (future) to SG2218P | Yellow | 3ft | Next to watchtower |
+| Data (future) to SG2218P | Yellow | 7ft | Next to watchtower, longer run than Monolith |

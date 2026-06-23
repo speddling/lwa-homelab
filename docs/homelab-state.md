@@ -1,5 +1,5 @@
-# LWA Infra — Current State
-> Last updated: 2026-06-21 · Authored on apex · All IaC in `speddling/lwa-homelab` repo (GitHub rename to `lwa-infra` pending — update this line once that lands)
+# LWA Infra -- Current State
+> Last updated: 2026-06-22 -- Authored on apex -- All IaC in `speddling/lwa-infra`
 > This is a snapshot of what's running, not what's coming. Roadmap, in-flight upgrades, and operational debt live in Plane (`LWA Infra` project), not in this repo.
 
 ---
@@ -11,10 +11,10 @@
 | Device | IP | Role | Status |
 |---|---|---|---|
 | ER605 v2.0 | 192.168.0.1 | Gigabit Multi-WAN VPN Router | ✅ Online |
-| AT&T CGW450 | — | 5G WAN2 (separate cellular network from T-Mobile) | ✅ Online — final ER605 tuning + SNMP monitoring deferred until after VLAN cutover |
+| AT&T CGW450 | -- | 5G WAN2 (separate cellular network from T-Mobile) | ✅ Online |
 | OC200 | 192.168.0.7 | Omada Network Controller | ✅ Online |
-| SG2218P | — | Managed PoE+ Switch | ✅ Installed — OC200 adoption/config in progress |
-| CyberPower CP1000PFCLCD | — | UPS | 🔶 Powered, all critical loads connected — monitoring not yet configured |
+| SG2218P | -- | Managed PoE+ Switch | ✅ Online |
+| CyberPower CP1000PFCLCD | -- | UPS | ✅ Online, all critical loads connected |
 | EAP245 — Foyer | 192.168.0.2 | Access Point | ✅ Online |
 | EAP245 — Yarn Studio | 192.168.0.5 | Access Point | ✅ Online |
 
@@ -60,7 +60,7 @@
 - Community string: `littlewolfacres` (stored in Ansible vault)
 - SNMPv3 user: `prometheus` (stored in Ansible vault)
 - Monitored devices: ER605, EAP245 Foyer, EAP245 Yarn Studio
-- **Note:** SG2218P is installed but OC200 adoption isn't finished yet, so it's not providing SNMP data. TL-SG1210P (decommissioned) never supported SNMP to begin with.
+- **Note:** SG2218P does not have SNMP configured. TL-SG1210P (decommissioned) never supported SNMP.
 
 ---
 
@@ -89,7 +89,7 @@ Always-on DNS resolver and full-stack monitoring node. Never runs workloads. See
 |---|---|---|---|
 | Alertmanager | Alert routing → Slack #sentinel + healthchecks.io watchdog | 9093 | ✅ Running |
 | Loki | Log aggregation, 60d retention | 3100 | ✅ Running |
-| Promtail | Log shipper — journal + ER605 syslog (not yet wired) | 9080 | ✅ Running |
+| Promtail | Log shipper -- journal logs | 9080 | ✅ Running |
 | Unbound | Recursive DNS resolver (upstream) | 5335 | ✅ Running |
 | AdGuard Home | DNS frontend, ad/tracker filtering | 53, 3000 | ✅ Running |
 | Prometheus | Metrics scraping + alert evaluation | 9090 | ✅ Running |
@@ -220,9 +220,20 @@ Alerting is owned by **Prometheus + Alertmanager**. Grafana is display-only.
 | | 500 GB SSD — Crucial CT500MX500SSD1 — `/mnt/ssd-a` — k8s local-path provisioner |
 | | 256 GB SSD — Crucial CT256M55 — `/mnt/ssd-b` — isolated workspace / client jumpbox |
 | | 3.6 TB HDD — Seagate ST4000DM004 — `/mnt/hdd-c` — music library / fileserver / bulk storage |
-| | 1.8 TB HDD — Hitachi HUA72202 — `/mnt/hdd-d` — mirror of hdd-c |
+| | 1.8 TB HDD -- Hitachi HUA72202 -- `/mnt/hdd-d` -- mirror of hdd-c |
 
-> Doubled from 32 GB on 2026-06-20, confirmed stable since.
+### Storage
+
+All mounts are UUID-based in `/etc/fstab` to survive drive reordering on reboot.
+
+```bash
+UUID=2903b345-9ec9-4524-9a59-c065f1a7c67c  /mnt/ssd-a  ext4  defaults  0  2  # 512GB SSD - k8s local-path provisioner
+UUID=6ec61651-6596-4f29-82e5-ca6c43b6f552  /mnt/ssd-b  ext4  defaults  0  2  # 256GB SSD - isolated workspace / client jumpbox
+UUID=5d036336-cc84-48ba-9f36-d403d4c75145  /mnt/hdd-c  ext4  defaults  0  2  # 3.6TB HDD - music library / fileserver / bulk storage
+UUID=725e0389-8e5b-431f-bdb4-1c59ab79ddf6  /mnt/hdd-d  ext4  defaults  0  2  # 1.8TB HDD - mirror of hdd-c
+```
+
+> NVMe (nvme0n1) runs at PCIe 2.0 x2 -- the AB350 Pro4 throttles the slot. Unallocated NVMe space above the 150G LVM root is intentional headroom, not an oversight.
 
 ### Role
 
@@ -352,7 +363,7 @@ ArgoCD authenticates to `speddling/lwa-homelab` via a GitHub fine-grained PAT.
 | PAT type | Fine-grained, single-repo scope, Contents: Read, no expiration |
 | Initial creation | `bootstrap-argocd.yml` (manual, runs once) |
 | Ongoing rotation | `rotate-argocd-credentials.yml` (manual trigger + quarterly schedule) |
-| Rotation runbook | See `docs/runbook.md` → ArgoCD → Rotating Repository Credentials |
+| Rotation runbook | See `docs/cluster-runbook.md`, ArgoCD section |
 
 > The secret is managed out-of-band — never via ArgoCD sync (circular dependency).
 > The Ansible playbook writes a 0600 temp file, applies it, then shreds it.
