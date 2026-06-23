@@ -97,6 +97,109 @@ See [`switch-port-map.svg`](switch-port-map.svg) for a visual reference.
 | SFP1 | reserved | — | — | — | n/a |
 | SFP2 | reserved | — | — | — | n/a |
 
+**Trunk semantics:**
+- Port 1 (ER605): all five active VLANs tagged; native 999 drops any stray untagged frames
+- Port 2 (monolith): trunk with native = Infra so the host interface sees untagged Infra traffic; add VLAN tags later if VMs need other segments
+- Ports 12, 13, 14 (APs): native = Mgmt so APs reach OC200 untagged; tagged VLANs carry the wireless SSIDs
+
+---
+
+## SSID Plan
+
+| SSID | VLAN | Notes |
+|------|------|-------|
+| `LittleWolfAcres` | 20 (Users) | Main household SSID. Name retained so family devices reconnect transparently after cutover. |
+| `LittleWolfAcres-IoT` | 40 (IoT) | Printer and any future IoT WiFi devices. Created pre-cutover, disabled until cutover. |
+| `LittleWolfAcres-Guest` | 50 (Guest) | Daughter's school Chromebook, visitor devices. Created pre-cutover, disabled until cutover. |
+
+No Infra SSID — Infra is wired-only by design. All three APs broadcast all three SSIDs.
+
+---
+
+## DNS Strategy
+
+**Split-horizon via AdGuard on watchtower (`.30.11`):**
+- Mgmt, Users, Infra, IoT → receive `.30.11` as primary DNS via DHCP from the ER605
+- AdGuard handles all `*.littlewolfacres.com` rewrites for internal hostnames and forwards external queries upstream
+- Guest → receives `1.1.1.1` and `9.9.9.9` via DHCP; bypasses AdGuard entirely — no internal hostname resolution, no AdGuard log noise
+
+Internal service naming convention: `<service>.littlewolfacres.com` with AdGuard rewrites pointing to private IPs.
+
+**Critical sequencing:** AdGuard rewrites must be updated to new IPs *before* the IaC PR deploys. Prometheus scrapes target `monolith.littlewolfacres.com` — if the rewrite still points to `192.168.0.20` when Ansible runs, every scrape job fails. Verify with `dig monolith.littlewolfacres.com @192.168.30.11` from an Infra device before triggering any post-cutover automation.
+
+---
+
+## Firewall Rules
+
+**Default policy on the ER605:** all inter-VLAN traffic **denied**, all WAN-outbound **allowed**, all WAN-inbound **denied**. Rules below are explicit allows on top of that. The ER605 is stateful — return traffic is permitted automatically.
+
+### From Users (192.168.20.0/24)
+
+| Source | Destination | Port / Protocol | Purpose |
+|--------|-------------|-----------------|---------|
+| Studio `.20.3` | Infra `.30.12` (Obelisk) | TCP 3389 | **DENY** — must be ordered **above** the general RDP allow below. First-match wins; if this isn't first, the broader allow fires and the exception never triggers. |
+| Users (all) | Infra `.30.12` (Obelisk) | TCP 3389 | RDP — apex and all other Users devices (Studio excluded by deny above) |
+| Users (all) | Infra `.30.11` (watchtower) | TCP/UDP 53 | DNS via AdGuard |
+| Users (all) | Infra `.30.10` (monolith) | TCP 445, 139 | Samba — wife's laptop, Studio, daughter iPad |
+| apex `.20.2` | Infra `.30.20` (Lore) *(future)* | TCP 11434 | Ollama |
+| apex `.20.2` | Infra `.30.21` (Data) *(future)* | TCP 11434 | Ollama |
+| Users (all) | IoT `.40.20` (printer) | TCP 631, 9100; UDP 5353 | Print + mDNS discovery |
+| Users (all) | Mgmt (all) | TCP 22, 80, 443 | Admin access to router/switch/APs/OC200 |
+
+### From Guest (192.168.50.0/24)
+
+| Destination | Port / Protocol | Purpose |
+|-------------|-----------------|---------|
+| IoT `.40.20` (printer) | TCP 631, 9100; UDP 5353 | Print (Chromebook + visitors) |
+| WAN | * | Internet only |
+
+No DNS allow to Infra. Guest DNS is `1.1.1.1` / `9.9.9.9` via DHCP.
+
+### From Infra (192.168.30.0/24)
+
+| Destination | Port / Protocol | Purpose |
+|-------------|-----------------|---------|
+| Mgmt (all) | UDP 161, ICMP | watchtower SNMP scrapes + ping monitoring |
+| WAN | * | Updates, container pulls, ArgoCD, ntfy |
+
+No allow to Users or Guest. Infra does not initiate to user devices.
+
+### From IoT (192.168.40.0/24)
+
+| Destination | Port / Protocol | Purpose |
+|-------------|-----------------|---------|
+| WAN | * | Cameras phone home, printer firmware updates, NTP |
+
+No allow to any internal VLAN. NVR ↔ cameras is intra-VLAN (no rule needed). Printer is a destination only, never a source.
+
+### From Mgmt (192.168.10.0/24)
+
+| Destination | Port / Protocol | Purpose |
+|-------------|-----------------|---------|
+| WAN | * | OC200 cloud access, firmware updates |
+
+Default deny everything else from Mgmt.
+
+### mDNS / Bonjour cross-VLAN (printer)
+
+The `UDP 5353` entries above open the port, but opening a port is not the same as enabling cross-VLAN multicast. mDNS discovery (`224.0.0.251`) doesn't cross VLAN boundaries on its own regardless of what the ACL permits.
+
+**Solution:** Settings → Services → mDNS → mDNS Repeater on the Gateway (ER605). Configure forwarding rules: Users→IoT and Guest→IoT, scoped to the printer's Bonjour/IPP service specifically.
+
+Requires Controller 5.6+ (have 5.14.x ✓) and matching ER605 firmware (have 2.2.3 ✓).
+
+If ACL rules prohibiting Users/Guest→IoT are in place, they can independently block forwarded mDNS traffic even when the repeater rule is configured correctly. If discovery doesn't work after setup, check the ACL before assuming the repeater rule is wrong.
+
+**Fallback:** skip auto-discovery and add the printer by static IP (`.40.20`) on each device directly. Works regardless of mDNS Repeater state.
+
+---
+
+## Remote Access
+
+Single entry point: **WireGuard on the ER605**, one inbound UDP port (51820) on the WAN, no per-service port forwards. WireGuard clients land in their own subnet with full reach into Users, Infra, IoT. New self-hosted services become reachable over the tunnel without additional firewall changes.
+
+Configuration (subnet allocation, client keys, policy) is deferred — tracked in Post-Cutover Follow-Ups.
+
 ---
 
 ## Pre-Cutover Checklist
@@ -116,21 +219,19 @@ Work that can be done while the flat network keeps running.
     - macOS: Settings → Wi-Fi → Details → Private Wi-Fi Address → off (per network)
     - Windows: Settings → Wi-Fi → [network] → Random hardware addresses → off
 - [ ] Pre-create SSIDs `LittleWolfAcres-IoT` (VLAN 40) and `LittleWolfAcres-Guest` (VLAN 50), marked **disabled**
-- [ ] Retain existing `LittleWolfAcres` SSID — it moves to VLAN 20 (Users) at cutover; family devices reconnect transparently
-- [ ] Configure mDNS Repeater: Settings → Services → mDNS → enable on the Gateway (ER605), add forwarding rules Users→IoT and Guest→IoT scoped to the printer's Bonjour/IPP service
-  - Requires Controller 5.6+ (have 5.14.x ✓) and matching ER605 firmware (have 2.2.3 ✓)
-  - Fallback if auto-discovery is troublesome: add printer manually by IP (`.40.20`) on each device — works regardless of mDNS Repeater state
+- [ ] Confirm `LittleWolfAcres` SSID is retained and will move to VLAN 20 (Users) at cutover
+- [ ] Configure mDNS Repeater per the Firewall Rules section above
 
 ### AdGuard
 
 - [ ] Export current local DNS rewrites (backup)
 - [ ] Prepare updated rewrite list mapping every `*.littlewolfacres.com` entry to its new IP
-- [ ] Confirm AdGuard listener is bound to `0.0.0.0` (not a specific interface) so it answers across all VLANs post-cutover
+- [ ] Confirm AdGuard listener is bound to `0.0.0.0` (not a specific interface)
 
 ### IaC Prep
 
 - [ ] `grep -rn '192.168.0.' .` across the repo — list every occurrence, group by file
-- [ ] Stage all changes (Ansible vars, K8s manifests, monitoring configs, `homelab-state.md`, `network.md`) in a parallel PR branch — **hold until post-cutover**
+- [ ] Stage all changes (Ansible vars, K8s manifests, monitoring configs, `homelab-state.md`) in a parallel PR branch — **hold until post-cutover**
 - [ ] Rename Prometheus job `snmp-eap-yarn-studio` → `snmp-eap-upstairs-hall` in that PR
 - [ ] Rewrite UFW rules on monolith — `192.168.0.0/24` catch-all must be split by VLAN:
   - HTTP/HTTPS, Samba → `192.168.20.0/24` (Users) only
@@ -162,12 +263,12 @@ Issue **30-minute family warning** before starting.
 2. In OC200, **enable the new networks** (VLANs 10/20/30/40/50/999). ER605 immediately begins listening on the new VLAN gateways
 3. **Push the SG2218P port plan** — trunks, native VLANs, tagged VLANs per the switch port table above. Ports change behavior immediately
 4. Update static-IP devices that don't pull config from Omada:
-   - **watchtower** — change static config `.0.21` → `.30.11` (or convert to DHCP reservation and reboot)
+   - **watchtower** — `.0.21` → `.30.11` (change static config, or convert to DHCP reservation and reboot)
    - **monolith** — `.0.20` → `.30.10`
    - **Big Brother NVR** — `.0.4` → `.40.10` (via NVR web UI)
    - **Reolink cam #1** — → `.40.11` (via Reolink app)
    - **Reolink cam #2** — → `.40.12` (via Reolink app)
-5. **Push AdGuard DNS rewrites** — paste the prepared list. Verify: `dig monolith.littlewolfacres.com @192.168.30.11` from an Infra device
+5. **Push AdGuard DNS rewrites** — paste the prepared list. Verify: `dig monolith.littlewolfacres.com @192.168.30.11` from an Infra device before proceeding
 6. **Enable new SSIDs** in OC200 (`LittleWolfAcres-IoT`, `LittleWolfAcres-Guest`). Move `LittleWolfAcres` to VLAN 20 (Users)
 
 ---
@@ -190,13 +291,13 @@ Per-VLAN smoke test. Don't skip any of these.
 
 ### Inter-VLAN Rules
 - [ ] RDP from apex → Obelisk (`.30.12`) works
-- [ ] RDP from Studio → Obelisk is **blocked** (Studio deny rule is ordered above the general LAN allow)
+- [ ] RDP from Studio → Obelisk is **blocked** (Studio deny rule ordered above the general allow)
 - [ ] Samba from Studio → monolith works
 - [ ] Samba from wife's laptop → monolith works
 - [ ] Print job from any Users device → printer succeeds
 - [ ] Print job from Guest → printer succeeds
-- [ ] If relying on AirPrint auto-discovery: printer *appears* in device's list without manual IP entry — a successful print via manually-added IP does not confirm the mDNS Repeater is working
-- [ ] Users device cannot reach Infra on non-allowed ports (try SSH from Users → monolith — should fail)
+- [ ] If relying on AirPrint auto-discovery: confirm printer *appears* in device list without manual IP entry — a successful print via manually-added IP does not confirm the mDNS Repeater is working
+- [ ] Users device cannot reach Infra on non-allowed ports (SSH from Users → monolith — should fail)
 - [ ] IoT device cannot reach Users or Infra (`ping 192.168.30.10` from NVR debug shell — should fail)
 - [ ] Guest device cannot reach anything internal except the printer (`ping 192.168.30.11` from guest device — should fail)
 
@@ -230,7 +331,7 @@ Per-VLAN smoke test. Don't skip any of these.
 
 Triggered if verification reveals a critical failure that can't be debugged within the window.
 
-1. In OC200, **restore the snapshot** taken at step 1 of cutover
+1. In OC200, **restore the snapshot** taken at cutover step 1
 2. ER605 reverts to flat network gateway
 3. SG2218P drops back to no-VLAN behavior; all ports become access on default VLAN
 4. APs revert to original SSID only
