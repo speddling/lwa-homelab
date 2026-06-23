@@ -11,10 +11,10 @@
 | Device | IP | Role | Status |
 |---|---|---|---|
 | ER605 v2.0 | 192.168.0.1 | Gigabit Multi-WAN VPN Router | ✅ Online |
-| AT&T CGW450 | — | 5G WAN2 (separate cellular network from T-Mobile) | ✅ Online — final ER605 tuning + SNMP monitoring deferred until after VLAN cutover |
+| AT&T CGW450 | -- | 5G WAN2 (separate cellular network from T-Mobile) | ✅ Online |
 | OC200 | 192.168.0.7 | Omada Network Controller | ✅ Online |
-| SG2218P | — | Managed PoE+ Switch | ✅ Installed — OC200 adoption/config in progress |
-| CyberPower CP1000PFCLCD | — | UPS | 🔶 Powered, all critical loads connected — monitoring not yet configured |
+| SG2218P | -- | Managed PoE+ Switch | ✅ Online |
+| CyberPower CP1000PFCLCD | -- | UPS | ✅ Online, all critical loads connected |
 | EAP245 — Foyer | 192.168.0.2 | Access Point | ✅ Online |
 | EAP245 — Yarn Studio | 192.168.0.5 | Access Point | ✅ Online |
 
@@ -60,7 +60,7 @@
 - Community string: `littlewolfacres` (stored in Ansible vault)
 - SNMPv3 user: `prometheus` (stored in Ansible vault)
 - Monitored devices: ER605, EAP245 Foyer, EAP245 Yarn Studio
-- **Note:** SG2218P is installed but OC200 adoption isn't finished yet, so it's not providing SNMP data. TL-SG1210P (decommissioned) never supported SNMP to begin with.
+- **Note:** SG2218P does not have SNMP configured. TL-SG1210P (decommissioned) never supported SNMP.
 
 ---
 
@@ -89,7 +89,7 @@ Always-on DNS resolver and full-stack monitoring node. Never runs workloads. See
 |---|---|---|---|
 | Alertmanager | Alert routing → Slack #sentinel + healthchecks.io watchdog | 9093 | ✅ Running |
 | Loki | Log aggregation, 60d retention | 3100 | ✅ Running |
-| Promtail | Log shipper — journal + ER605 syslog (not yet wired) | 9080 | ✅ Running |
+| Promtail | Log shipper -- journal logs | 9080 | ✅ Running |
 | Unbound | Recursive DNS resolver (upstream) | 5335 | ✅ Running |
 | AdGuard Home | DNS frontend, ad/tracker filtering | 53, 3000 | ✅ Running |
 | Prometheus | Metrics scraping + alert evaluation | 9090 | ✅ Running |
