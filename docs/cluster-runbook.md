@@ -674,8 +674,42 @@ All permanent structured runs use solid core Cat6 riser (CMR). Solid core termin
 | Color | Role |
 |---|---|
 | Red | WAN uplinks -- T-Mobile and AT&T to ER605 WAN ports |
-| Orange | LAN / infrastructure -- switch, router, OC200, servers (monolith, watchtower) |
-| Yellow | Edge endpoints -- APs and cameras (mostly PoE) |
+| Orange | Edge endpoints -- APs and cameras (PoE) |
+| Yellow | LAN / infrastructure -- switch, router, OC200, servers |
 | White | Management / out-of-band -- UPS, console, monitoring adjacent |
 
 > All equipment is black. White patch cables are reserved for management runs specifically so they stand out visually against everything else in the closet.
+
+### Patch Panel Port Map
+
+12-port DSHOT Cat5e, wall-mounted left side of closet at rack shelf height.
+
+| Port | Device | Color | Length | Path |
+|---|---|---|---|---|
+| 1 | Camera 1 (fixed, NVR) | Orange | 3ft | Behind rack, up to switch shelf |
+| 2 | Camera 2 (fixed, NVR) | Orange | 3ft | Behind rack, up to switch shelf |
+| 3 | Camera 3 (fixed, NVR) | Orange | 3ft | Behind rack, up to switch shelf |
+| 4 | Camera 4 (fixed, NVR) | Orange | 3ft | Behind rack, up to switch shelf |
+| 5 | Camera 5 (fixed, NVR) | Orange | 3ft | Behind rack, up to switch shelf |
+| 6 | Camera 6 (fixed, NVR) | Orange | 3ft | Behind rack, up to switch shelf |
+| 7 | Camera 7 (advanced, switch) | Orange | 3ft | Behind rack, up to switch shelf |
+| 8 | Camera 8 (advanced, switch) | Orange | 3ft | Behind rack, up to switch shelf |
+| 9 | -- gap -- | -- | -- | -- |
+| 10 | EAP245 Foyer | Orange | 3ft | Up to switch |
+| 11 | EAP245 Yarn Studio | Orange | 3ft | Up to switch |
+| 12 | EAP225-Outdoor | Orange | 3ft | Up to switch |
+
+### Direct Patch Cables (no panel)
+
+All within the closet, stranded Cat6, device to SG2218P directly.
+
+| Device | Color | Length | Notes |
+|---|---|---|---|
+| T-Mobile FAST 5688W to ER605 WAN1 | Red | 14ft | Top shelf down to router |
+| AT&T CGW450 to ER605 WAN2 | Red | 14ft | Top shelf down to router |
+| ER605 to SG2218P | Yellow | 1ft | Same shelf |
+| OC200 to SG2218P | Yellow | 1ft | Same shelf |
+| Watchtower to SG2218P | Yellow | 2ft | Watchtower positioned directly above switch port, over top of switch, shelf is under 10" deep |
+| Monolith to SG2218P | Yellow | 5ft | Up wall to panel height, across to switch |
+| Lore (future) to SG2218P | Yellow | 3ft | Next to watchtower |
+| Data (future) to SG2218P | Yellow | 7ft | Next to watchtower, longer run than Monolith |
