@@ -160,7 +160,7 @@ No DNS allow to Infra. Guest DNS is `1.1.1.1` / `9.9.9.9` via DHCP.
 | Source | Destination | Port / Protocol | Purpose |
 |--------|-------------|-----------------|---------|
 | Infra (all) | Mgmt (all) | UDP 161, ICMP | watchtower SNMP scrapes + ping monitoring |
-| watchtower `.30.11` | Mgmt `.10.3` (OC200) | TCP 8043 | Omada Open API — network IaC reconcile (see Post-Cutover Follow-Ups). Scoped to watchtower only, not all of Infra. Port must match the OC200 Interface Access Address; default controller HTTPS is 8043. |
+| watchtower `.30.11` | Mgmt `.10.3` (OC200) | TCP 443 | Omada Open API — network IaC reconcile (see Post-Cutover Follow-Ups). Scoped to watchtower only, not all of Infra. Port matches the OC200 Interface Access Address (HTTPS 443 on this controller). |
 | Infra (all) | WAN | * | Updates, container pulls, ArgoCD, ntfy |
 
 No allow to Users or Guest. Infra does not initiate to user devices.
@@ -350,7 +350,7 @@ Not part of the maintenance window — tracked separately.
 
 - **Balcony AP (EAP225-Outdoor):** mount above master suite balcony slider, run outdoor cable through duct chase from basement, inline Ethernet surge protector at basement entry, plug into port 14 — AP self-adopts to `.10.6`
 - **Coop/run cable:** pulled when power-to-coop project happens; terminates in weatherproof junction box at coop end, lands on port 10
-- **Network IaC / Omada GitOps:** manage VLANs, DHCP scopes, SSIDs, and PoE declaratively via the Omada Open API (Client Credentials app, already created). Ansible role at `services/omada/`, deployed by `deploy-omada.yml` on the watchtower runner. Phased rollout: read-only state export → dry-run diff → reconcile → migrate hand-built config into declarative files. Requires the Infra→OC200 TCP 8043 ACL above. Vault keys: `vault_omada_client_id`, `vault_omada_client_secret`, `vault_omada_id`, `vault_omada_api_base`. Only `omada_api_base` changes at cutover (OC200 → .10.3); credentials are stable.
+- **Network IaC / Omada GitOps:** manage VLANs, DHCP scopes, SSIDs, and PoE declaratively via the Omada Open API (Client Credentials app, already created). Ansible role at `services/omada/`, deployed by `deploy-omada.yml` on the watchtower runner. Phased rollout: read-only state export → dry-run diff → reconcile → migrate hand-built config into declarative files. Requires the Infra→OC200 TCP 443 ACL above. Vault keys: `vault_omada_client_id`, `vault_omada_client_secret`, `vault_omada_id`, `vault_omada_api_base`. Only `omada_api_base` changes at cutover (OC200 → .10.3); credentials are stable.
 - **WireGuard on ER605:** subnet allocation, client policy, key rotation
 - **Reverse proxy / Cloudflare Tunnel:** for selectively WAN-exposed services
 - **Mermaid topology diagram:** `docs/network-topology.md`
