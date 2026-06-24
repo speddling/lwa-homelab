@@ -1,9 +1,12 @@
 ---
-# Where exported state is written (repo-relative, committed for config-as-backup).
-# playbook_dir = services/omada/ansible/playbooks, so three levels up reaches
-# services/omada, then into state/. (Was ../../state, which wrongly landed in
-# services/omada/ansible/state.)
-omada_state_dir: "{{ playbook_dir }}/../../../state"
+# Where exported state is written (committed for config-as-backup).
+# playbook_dir is absolute: .../services/omada/ansible/playbooks
+# Two dirname() calls climb to .../services/omada, then append /state.
+# Computed (not ".."-relative) so it resolves to a real absolute path
+# regardless of the step's working-directory — the ".." form resolved
+# against the run step's CWD (services/omada/ansible) and wrongly wrote
+# to services/state/.
+omada_state_dir: "{{ (playbook_dir | dirname | dirname) }}/state"
 
 # TLS verification. OC200 ships a self-signed cert, so default is false.
 # Flip to true once a trusted cert is installed on the controller.
