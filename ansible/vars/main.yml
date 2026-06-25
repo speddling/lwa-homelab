@@ -34,6 +34,12 @@ omada_client_id:     "{{ vault_omada_client_id }}"
 omada_client_secret: "{{ vault_omada_client_secret }}"
 omada_validate_certs: false
 
+# Omada Web API (/api/v2/) — Local Admin user for VLAN/DHCP config.
+# Session login (username/password -> CSRF token), distinct from the
+# Open API client-credentials above. Used by the omada_vlans playbook.
+omada_web_username:  "{{ vault_omada_web_username }}"
+omada_web_password:  "{{ vault_omada_web_password }}"
+
 # -----------------------------------------------------------------------------
 # Network — Hostnames and FQDNs
 # -----------------------------------------------------------------------------

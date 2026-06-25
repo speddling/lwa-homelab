@@ -1,0 +1,132 @@
+---
+# =============================================================================
+# Reconcile LWA VLANs: read current state, then PATCH DHCP/DNS onto each
+# interface VLAN to match the declarative desired state in defaults/main.yml.
+#
+# SAFETY:
+#  - Read-then-write: GETs current networks first; never blind-writes.
+#  - Dry-run by default. Pass -e omada_apply=true to actually PATCH.
+#  - Only touches the VLANs named in omada_vlans. Leaves everything else.
+#  - Pit (purpose: vlan) needs no DHCP/DNS, so it is skipped for PATCH.
+# =============================================================================
+
+- name: Authenticate to the Web API
+  ansible.builtin.include_tasks: auth.yml
+
+# ---- Discover the real site id ------------------------------------------
+# The display name was renamed to LWA, but the internal siteId may still be
+# "Default". Resolve it from the API rather than assuming.
+- name: List sites (Web API)
+  ansible.builtin.uri:
+    url: "{{ omada_api_base }}/{{ omada_cid }}/api/v2/sites?currentPage=1&currentPageSize=100"
+    method: GET
+    headers: "{{ omada_auth_headers }}"
+    validate_certs: false
+    return_content: true
+    status_code: [200]
+  register: omada_sites_resp
+  no_log: true
+
+- name: Resolve site id for the LWA site
+  ansible.builtin.set_fact:
+    omada_site_id: >-
+      {{ (omada_sites_resp.json.result.data
+          | selectattr('name', 'equalto', 'LWA') | map(attribute='id') | first)
+         if (omada_sites_resp.json.result.data | selectattr('name','equalto','LWA') | list | length > 0)
+         else (omada_sites_resp.json.result.data | map(attribute='id') | first) }}
+
+- name: Show resolved site
+  ansible.builtin.debug:
+    msg: "Targeting site id: {{ omada_site_id }}"
+
+# ---- Read current LAN networks ------------------------------------------
+- name: Get current LAN networks
+  ansible.builtin.uri:
+    url: "{{ omada_api_base }}/{{ omada_cid }}/api/v2/sites/{{ omada_site_id }}/setting/lan/networks?currentPage=1&currentPageSize=100"
+    method: GET
+    headers: "{{ omada_auth_headers }}"
+    validate_certs: false
+    return_content: true
+    status_code: [200]
+  register: omada_networks_resp
+  no_log: true
+
+- name: Index existing networks by name
+  ansible.builtin.set_fact:
+    omada_existing: >-
+      {{ dict(omada_networks_resp.json.result.data
+              | map(attribute='name') | zip(omada_networks_resp.json.result.data)) }}
+  no_log: true
+
+# ---- Plan: which desired VLANs exist and need a DHCP/DNS patch ----------
+- name: Report reconcile plan
+  ansible.builtin.debug:
+    msg: >-
+      {{ item.name }} (VLAN {{ item.vlan }}, {{ item.purpose }}):
+      {{ 'FOUND — will PATCH DHCP/DNS' if (item.name in omada_existing and item.purpose == 'interface')
+         else ('FOUND — L2, no DHCP (skip)' if item.name in omada_existing
+         else 'MISSING — not present on controller (will not create here)') }}
+  loop: "{{ omada_vlans }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+# ---- Apply: PATCH DHCP/DNS onto each interface VLAN ----------------------
+# Builds the body from the captured schema. Reuses each network's existing
+# id, vlan, gatewaySubnet, and interfaceIds (read above) so we update in
+# place rather than redefining.
+- name: PATCH DHCP/DNS onto interface VLANs
+  ansible.builtin.uri:
+    url: "{{ omada_api_base }}/{{ omada_cid }}/api/v2/sites/{{ omada_site_id }}/setting/lan/networks/{{ omada_existing[item.name].id }}"
+    method: PATCH
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+      purpose: "interface"
+      allLan: false
+      interfaceIds: "{{ omada_existing[item.name].interfaceIds | default(omada_existing[item.name].interfaceId | default([])) }}"
+      vlan: "{{ item.vlan }}"
+      gatewaySubnet: "{{ item.gateway_subnet }}"
+      domain: null
+      igmpSnoopEnable: false
+      mldSnoopEnable: false
+      dhcpL2RelayEnable: false
+      vlanType: 0
+      dhcpSettings:
+        enable: true
+        ipRangePool:
+          - ipaddrStart: "{{ item.dhcp_start }}"
+            ipaddrEnd: "{{ item.dhcp_end }}"
+        dhcpns: "manual"
+        priDns: "{{ item.dns }}"
+        sndDns: "{{ item.dns_secondary | default(None) }}"
+        leasetime: "{{ omada_dhcp_lease }}"
+        gateway: null
+        options: []
+      dhcpGuard:
+        enable: true
+        dhcpSvr1: "{{ item.gateway_subnet | regex_replace('/.*$', '') }}"
+        dhcpSvr2: null
+      dhcpv6Guard:
+        enable: false
+        dhcpv6Svr1: null
+        dhcpv6Svr2: null
+    headers: "{{ omada_auth_headers }}"
+    validate_certs: false
+    return_content: true
+    status_code: [200]
+  register: omada_patch
+  no_log: true
+  when:
+    - omada_apply | default(false) | bool
+    - item.purpose == "interface"
+    - item.name in omada_existing
+  loop: "{{ omada_vlans }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Summary
+  ansible.builtin.debug:
+    msg: >-
+      {{ 'APPLIED — DHCP/DNS patched onto interface VLANs.'
+         if (omada_apply | default(false) | bool)
+         else 'DRY-RUN — no changes made. Re-run with -e omada_apply=true to apply.' }}
