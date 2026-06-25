@@ -12,6 +12,15 @@
 # -----------------------------------------------------------------------------
 # Network — IP addresses
 # -----------------------------------------------------------------------------
+# CUTOVER TARGETS (the held PR #166 flips these to VLAN addressing):
+#   ip_apex       -> 192.168.20.2   (Users VLAN 20, MAC-bound reservation)
+#   ip_studio     -> 192.168.20.3   (Users VLAN 20, MAC-bound reservation)
+#   ip_monolith   -> 192.168.30.10  (Infra VLAN 30)
+#   ip_watchtower -> 192.168.30.11  (Infra VLAN 30, DNS/AdGuard)
+#   ip_reolink_nvr-> 192.168.40.10  (IoT VLAN 40)
+# Hosts/APs/switch get their VLAN addresses when adopted/reserved at cutover.
+# Changing the values below sweeps every ip_*-referencing template (e.g. the
+# AdGuard rewrites). Do NOT flip until the cutover window.
 ip_er605:              "192.168.0.1"
 ip_eap245_foyer:       "192.168.0.2"
 ip_reolink_nvr:        "192.168.0.4"
