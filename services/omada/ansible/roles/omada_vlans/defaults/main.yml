@@ -1,0 +1,65 @@
+---
+# =============================================================================
+# LWA VLAN design — declarative desired state.
+# This is the source of truth for the segmented network. The playbook
+# reconciles the Omada controller to match this list.
+# =============================================================================
+#
+# purpose:
+#   interface = Layer-3 network with a gateway + DHCP (Mgmt/Users/Infra/IoT/Guest)
+#   vlan      = Layer-2 only, no gateway/DHCP (Pit — trunk-native blackhole)
+#
+# Field shapes were captured from the controller's own /api/v2/ payloads
+# (a vlan-create POST and an interface PATCH), so they match this build.
+
+omada_dns_primary: "192.168.30.11"     # watchtower / AdGuard (post-cutover)
+omada_dhcp_lease: "180"                 # controller default; irrelevant — key hosts are MAC-bound
+
+# DHCP pool convention: .100–.200 dynamic; .2–.99 reserved for statics.
+# Guest widens the pool (.50–.200). Pit has no pool.
+omada_vlans:
+  - name: "Mgmt"
+    purpose: "interface"
+    vlan: 10
+    gateway_subnet: "192.168.10.1/24"
+    dhcp_start: "192.168.10.100"
+    dhcp_end: "192.168.10.200"
+    dns: "192.168.30.11"
+
+  - name: "Users"
+    purpose: "interface"
+    vlan: 20
+    gateway_subnet: "192.168.20.1/24"
+    dhcp_start: "192.168.20.100"
+    dhcp_end: "192.168.20.200"
+    dns: "192.168.30.11"
+
+  - name: "Infra"
+    purpose: "interface"
+    vlan: 30
+    gateway_subnet: "192.168.30.1/24"
+    dhcp_start: "192.168.30.100"
+    dhcp_end: "192.168.30.200"
+    dns: "192.168.30.11"
+
+  - name: "IoT"
+    purpose: "interface"
+    vlan: 40
+    gateway_subnet: "192.168.40.1/24"
+    dhcp_start: "192.168.40.100"
+    dhcp_end: "192.168.40.200"
+    dns: "192.168.30.11"
+
+  - name: "Guest"
+    purpose: "interface"
+    vlan: 50
+    gateway_subnet: "192.168.50.1/24"
+    dhcp_start: "192.168.50.50"
+    dhcp_end: "192.168.50.200"
+    dns: "1.1.1.1"          # Guest bypasses AdGuard by design
+    dns_secondary: "9.9.9.9"
+
+  - name: "Pit"
+    purpose: "vlan"
+    vlan: 999
+    # L2 blackhole — no gateway, no DHCP. Trunk-native drop.

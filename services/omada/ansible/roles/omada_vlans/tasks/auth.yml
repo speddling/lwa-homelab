@@ -1,0 +1,65 @@
+---
+# Web API session login. Distinct from the Open API token flow:
+#   POST /{omadacId}/api/v2/login  with {username, password}
+#   -> response: {errorCode:0, result:{token: <csrf>}}
+#   -> response Set-Cookie: TPOMADA_SESSIONID=<session>
+# Every subsequent /api/v2/ write sends BOTH:
+#   header  Csrf-Token: <token>
+#   header  Cookie: TPOMADA_SESSIONID=<session>
+#
+# First we need the controller id (omadacId). Reuse omada_id from vault.
+
+- name: Resolve controller id
+  ansible.builtin.set_fact:
+    omada_cid: "{{ omada_id }}"
+
+- name: Log in to Omada Web API (/api/v2/login)
+  ansible.builtin.uri:
+    url: "{{ omada_api_base }}/{{ omada_cid }}/api/v2/login"
+    method: POST
+    body_format: json
+    body:
+      username: "{{ omada_web_username }}"
+      password: "{{ omada_web_password }}"
+    headers:
+      Content-Type: application/json
+    validate_certs: false
+    return_content: true
+    status_code: [200, 400, 401, 403]
+  register: omada_login
+  no_log: true
+
+- name: Assert login succeeded
+  ansible.builtin.assert:
+    that:
+      - omada_login.json is defined
+      - omada_login.json.errorCode == 0
+      - omada_login.json.result.token is defined
+    fail_msg: >-
+      Web API login failed — errorCode={{ omada_login.json.errorCode | default('?') }},
+      msg='{{ omada_login.json.msg | default('no json') }}'. Check
+      vault_omada_web_username / vault_omada_web_password (must be a Local
+      Admin user) and omada_api_base.
+    success_msg: "Web API login OK (CSRF token acquired)."
+
+- name: Capture CSRF token
+  ansible.builtin.set_fact:
+    omada_csrf: "{{ omada_login.json.result.token }}"
+  no_log: true
+
+# The session cookie comes back as a Set-Cookie header. Ansible's uri
+# exposes response headers; extract TPOMADA_SESSIONID for reuse.
+- name: Capture session cookie
+  ansible.builtin.set_fact:
+    omada_cookie: >-
+      {{ (omada_login.set_cookie | default('')) }}
+  no_log: true
+
+- name: Build reusable auth headers
+  ansible.builtin.set_fact:
+    omada_auth_headers:
+      Content-Type: "application/json"
+      Csrf-Token: "{{ omada_csrf }}"
+      X-Requested-With: "XMLHttpRequest"
+      Cookie: "{{ omada_cookie }}"
+  no_log: true

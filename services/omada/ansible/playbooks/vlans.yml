@@ -1,0 +1,20 @@
+---
+# Reconcile LWA VLANs (DHCP/DNS) on the Omada controller via the Web API.
+#
+# DRY-RUN (default — reads + plans, no writes):
+#   cd services/omada/ansible
+#   ansible-playbook -i inventory.ini playbooks/vlans.yml
+#
+# APPLY (actually PATCH DHCP/DNS):
+#   ansible-playbook -i inventory.ini playbooks/vlans.yml -e omada_apply=true
+#
+# Desired state lives in roles/omada_vlans/defaults/main.yml.
+# Auth uses the Local Admin Web API account (vault_omada_web_*).
+- name: Reconcile Omada VLANs (DHCP/DNS)
+  hosts: omada_runner
+  gather_facts: false
+  vars_files:
+    - ../../../../ansible/vars/main.yml
+    - ../../../../ansible/vars/vault.yml
+  roles:
+    - omada_vlans
