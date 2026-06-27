@@ -17,8 +17,8 @@
   hosts: watchtower
   become: true
   vars_files:
-    - "{{ playbook_dir }}/../../../ansible/vars/main.yml"
-    - "{{ playbook_dir }}/../../../ansible/vars/vault.yml"
+    - "{{ playbook_dir }}/../../../../ansible/vars/main.yml"
+    - "{{ playbook_dir }}/../../../../ansible/vars/vault.yml"
 
   tasks:
     - name: Allow SSH from Users VLAN
@@ -97,8 +97,8 @@
   hosts: monolith
   become: true
   vars_files:
-    - "{{ playbook_dir }}/../../../ansible/vars/main.yml"
-    - "{{ playbook_dir }}/../../../ansible/vars/vault.yml"
+    - "{{ playbook_dir }}/../../../../ansible/vars/main.yml"
+    - "{{ playbook_dir }}/../../../../ansible/vars/vault.yml"
 
   tasks:
     - name: Allow SSH from Users VLAN

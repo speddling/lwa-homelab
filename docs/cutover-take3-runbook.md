@@ -72,26 +72,13 @@ All three dry-runs must be clean before proceeding.
 
 Adds VLAN subnet rules alongside flat-network rules on both servers.
 
-### Step 4 — Phase 1: ER605 trunk port only
-
-    ansible-playbook -i inventory.ini playbooks/switch_ports.yml \
-      -e omada_apply=true -e cutover_phase=1
-
-Wait 60 seconds then verify ER605 VLAN routing:
-
-    ping -c 2 192.168.10.1
-    ping -c 2 192.168.20.1
-    ping -c 2 192.168.30.1
-    ping -c 2 192.168.40.1
-
-All four must respond before Phase 2.
-
-### Step 5 — Phase 2: Everything else (except OC200)
+### Step 4 — Phase 2: Server, AP, and access ports
 
     ansible-playbook -i inventory.ini playbooks/switch_ports.yml \
       -e omada_apply=true -e cutover_phase=2
 
-Ports 2-10, 12-15 flip. WiFi drops briefly. Verify within 60 seconds:
+Ports 2-10, 12-15 flip. Port 1 (ER605) and port 11 (OC200) are excluded.
+WiFi drops briefly. Verify within 60 seconds:
 
     ping 192.168.30.10
     ping 192.168.30.11
