@@ -30,18 +30,16 @@ omada_switch_mac: "A8-29-48-EB-17-EB"
 # Cutover phase control
 # =============================================================================
 # Each port has a cutover_phase field:
-#   1       → Phase 1: ER605 trunk only — flip first, wait for ER605 to
-#             initialize VLAN interfaces and DHCP to come up on all scopes.
-#   2       → Phase 2: servers, APs, access ports — flip after Phase 1 is
-#             verified and DHCP is confirmed serving on each VLAN.
-#   manual  → Never automated. Apply by hand in OC200 UI after Phase 2
-#             is stable. (OC200 itself — lose controller = lose everything.)
+#   2       → Phase 2: servers, APs, access ports — the only automated phase.
+#             Port 1 (ER605) stays on All permanently — OC200 manages ER605
+#             VLAN routing directly via SDN; switch port profile not needed.
+#   manual  → Never automated. Apply by hand in OC200 UI.
+#             Port 1 (ER605): leave on All always.
+#             Port 11 (OC200): flip to Mgmt last, after phase 2 is verified.
 #
 # Usage:
-#   Dry-run all:       ansible-playbook switch_ports.yml
-#   Phase 1 apply:     ansible-playbook switch_ports.yml -e omada_apply=true -e cutover_phase=1
-#   Phase 2 apply:     ansible-playbook switch_ports.yml -e omada_apply=true -e cutover_phase=2
-#   (Port 11/OC200 is always skipped by automation — flip it manually in OC200 UI)
+#   Dry-run:      ansible-playbook switch_ports.yml
+#   Apply:        ansible-playbook switch_ports.yml -e omada_apply=true -e cutover_phase=2
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -85,9 +83,9 @@ omada_switch_ports:
   - port: 1
     name: "Port1"
     device: "ER605"
-    profile_name: "ER605-Trunk"
-    cutover_phase: 1
-    note: "Gateway uplink — trunk, native Pit. PHASE 1: flip first, alone."
+    profile_name: null
+    cutover_phase: "manual"
+    note: "Gateway uplink — leave on All permanently. OC200 manages ER605 VLAN routing directly via SDN; switch port profile is irrelevant here."
 
   - port: 2
     name: "Port2"
